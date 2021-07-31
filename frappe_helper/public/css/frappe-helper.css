@@ -1,0 +1,50 @@
+:root {
+    --default-line: 1px solid rgba(119, 136, 153, 0.39);
+    --fill-color: rgba(119, 136, 153, 0.07);
+    --selected-color: rgba(119, 136, 153, 0.39);
+    --margin-grid: 5px;
+}
+
+.jstmlefc65a6efc9cb8afbc85 {
+    opacity: 0.4;
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    filter: alpha(opacity=65);
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.jstmlefc65a6efc9cb8afbc85-confirm {
+    background-color: #ff5900 !important;
+    color: #ffffff !important;
+    font-weight: bold;
+    animation: blinker 1.5s linear infinite;
+}
+
+@keyframes blinker {
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.pdf-container {
+    background: linear-gradient(-45deg, #161e23, #414449, #1d2226, #494c4f);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+}
+
+@keyframes gradient {
+    0% {
+        background-position: 0 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0 50%;
+    }
+}

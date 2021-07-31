@@ -1,0 +1,376 @@
+{
+ "actions": [],
+ "creation": "2021-07-15 19:11:24.656019",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "route",
+  "doc_type",
+  "module",
+  "column_break_4",
+  "is_standard",
+  "published",
+  "login_required",
+  "route_to_success_link",
+  "allow_edit",
+  "allow_multiple",
+  "show_in_grid",
+  "allow_delete",
+  "allow_print",
+  "print_format",
+  "allow_comments",
+  "show_attachments",
+  "allow_incomplete",
+  "introduction",
+  "introduction_text",
+  "fields",
+  "desk_form_fields",
+  "max_attachment_size",
+  "client_script_section",
+  "client_script",
+  "custom_css_section",
+  "custom_css",
+  "actions",
+  "button_label",
+  "success_message",
+  "success_url",
+  "sidebar_settings",
+  "show_sidebar",
+  "sidebar_items",
+  "payments",
+  "accept_payment",
+  "payment_gateway",
+  "payment_button_label",
+  "payment_button_help",
+  "column_break_28",
+  "amount_based_on_field",
+  "amount_field",
+  "amount",
+  "currency",
+  "advanced",
+  "web_page_link_text",
+  "breadcrumbs"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "no_copy": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route",
+   "unique": 1
+  },
+  {
+   "fieldname": "doc_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Select DocType",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "module",
+   "fieldtype": "Link",
+   "label": "Module",
+   "options": "Module Def"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standard",
+   "fieldtype": "Check",
+   "label": "Is Standard"
+  },
+  {
+   "default": "0",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published"
+  },
+  {
+   "default": "0",
+   "fieldname": "login_required",
+   "fieldtype": "Check",
+   "label": "Login Required"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.login_required",
+   "fieldname": "route_to_success_link",
+   "fieldtype": "Check",
+   "label": "Route to Success Link"
+  },
+  {
+   "default": "0",
+   "depends_on": "login_required",
+   "fieldname": "allow_edit",
+   "fieldtype": "Check",
+   "label": "Allow Edit"
+  },
+  {
+   "default": "0",
+   "depends_on": "login_required",
+   "fieldname": "allow_multiple",
+   "fieldtype": "Check",
+   "label": "Allow Multiple"
+  },
+  {
+   "default": "0",
+   "depends_on": "allow_multiple",
+   "fieldname": "show_in_grid",
+   "fieldtype": "Check",
+   "label": "Show as Grid"
+  },
+  {
+   "default": "0",
+   "depends_on": "allow_multiple",
+   "fieldname": "allow_delete",
+   "fieldtype": "Check",
+   "label": "Allow Delete"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_print",
+   "fieldtype": "Check",
+   "label": "Allow Print"
+  },
+  {
+   "depends_on": "allow_print",
+   "fieldname": "print_format",
+   "fieldtype": "Link",
+   "label": "Print Format",
+   "options": "Print Format"
+  },
+  {
+   "default": "0",
+   "depends_on": "login_required",
+   "fieldname": "allow_comments",
+   "fieldtype": "Check",
+   "label": "Allow Comments"
+  },
+  {
+   "default": "0",
+   "depends_on": "login_required",
+   "fieldname": "show_attachments",
+   "fieldtype": "Check",
+   "label": "Show Attachments"
+  },
+  {
+   "default": "0",
+   "description": "Allow saving if mandatory fields are not filled",
+   "fieldname": "allow_incomplete",
+   "fieldtype": "Check",
+   "label": "Allow Incomplete Forms"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "introduction",
+   "fieldtype": "Section Break",
+   "label": "Introduction"
+  },
+  {
+   "fieldname": "introduction_text",
+   "fieldtype": "Text Editor",
+   "label": "Introduction"
+  },
+  {
+   "fieldname": "fields",
+   "fieldtype": "Section Break",
+   "label": "Fields"
+  },
+  {
+   "fieldname": "desk_form_fields",
+   "fieldtype": "Table",
+   "label": "Desk Form Fields",
+   "options": "Desk Form Field"
+  },
+  {
+   "fieldname": "max_attachment_size",
+   "fieldtype": "Int",
+   "label": "Max Attachment Size (in MB)"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "client_script_section",
+   "fieldtype": "Section Break",
+   "label": "Client Script"
+  },
+  {
+   "description": "For help see <a href=\"https://frappe.io/docs/user/en/guides/portal-development/web-forms\" target=\"_blank\">Client Script API and Examples</a>",
+   "fieldname": "client_script",
+   "fieldtype": "Code",
+   "label": "Client Script"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "custom_css_section",
+   "fieldtype": "Section Break",
+   "label": "Custom CSS"
+  },
+  {
+   "fieldname": "custom_css",
+   "fieldtype": "Code",
+   "label": "Custom CSS",
+   "options": "CSS"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "actions",
+   "fieldtype": "Section Break",
+   "label": "Actions"
+  },
+  {
+   "default": "Save",
+   "fieldname": "button_label",
+   "fieldtype": "Data",
+   "label": "Button Label"
+  },
+  {
+   "description": "Message to be displayed on successful completion (only for Guest users)",
+   "fieldname": "success_message",
+   "fieldtype": "Text",
+   "label": "Success Message"
+  },
+  {
+   "description": "Go to this URL after completing the form (only for Guest users)",
+   "fieldname": "success_url",
+   "fieldtype": "Data",
+   "label": "Success URL"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sidebar_settings",
+   "fieldtype": "Section Break",
+   "label": "Sidebar Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_sidebar",
+   "fieldtype": "Check",
+   "label": "Show Sidebar"
+  },
+  {
+   "fieldname": "sidebar_items",
+   "fieldtype": "Table",
+   "label": "Sidebar Items",
+   "options": "Portal Menu Item"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "accept_payment",
+   "fieldname": "payments",
+   "fieldtype": "Section Break",
+   "label": "Payments"
+  },
+  {
+   "default": "0",
+   "fieldname": "accept_payment",
+   "fieldtype": "Check",
+   "label": "Accept Payment"
+  },
+  {
+   "depends_on": "accept_payment",
+   "fieldname": "payment_gateway",
+   "fieldtype": "Link",
+   "label": "Payment Gateway",
+   "options": "Payment Gateway"
+  },
+  {
+   "default": "Buy Now",
+   "depends_on": "accept_payment",
+   "fieldname": "payment_button_label",
+   "fieldtype": "Data",
+   "label": "Button Label"
+  },
+  {
+   "depends_on": "accept_payment",
+   "fieldname": "payment_button_help",
+   "fieldtype": "Text",
+   "label": "Button Help"
+  },
+  {
+   "fieldname": "column_break_28",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "accept_payment",
+   "fieldname": "amount_based_on_field",
+   "fieldtype": "Check",
+   "label": "Amount Based On Field"
+  },
+  {
+   "depends_on": "eval:doc.accept_payment && doc.amount_based_on_field",
+   "fieldname": "amount_field",
+   "fieldtype": "Select",
+   "label": "Amount Field"
+  },
+  {
+   "depends_on": "eval:doc.accept_payment && !doc.amount_based_on_field",
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount"
+  },
+  {
+   "depends_on": "accept_payment",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "advanced",
+   "fieldtype": "Section Break",
+   "label": "Advanced"
+  },
+  {
+   "description": "Text to be displayed for Link to Web Page if this form has a web page. Link route will be automatically generated based on `page_name` and `parent_website_route`",
+   "fieldname": "web_page_link_text",
+   "fieldtype": "Data",
+   "label": "Web Page Link Text"
+  },
+  {
+   "description": "List as [{\"label\": _(\"Jobs\"), \"route\":\"jobs\"}]",
+   "fieldname": "breadcrumbs",
+   "fieldtype": "Code",
+   "label": "Breadcrumbs"
+  }
+ ],
+ "has_web_view": 1,
+ "icon": "icon-edit",
+ "index_web_pages_for_search": 1,
+ "is_published_field": "published",
+ "links": [],
+ "modified": "2021-07-15 19:11:24.656019",
+ "modified_by": "Administrator",
+ "module": "Frappe Helper",
+ "name": "Desk Form",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "title",
+ "track_changes": 1
+}
