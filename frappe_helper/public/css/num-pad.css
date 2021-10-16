@@ -1,12 +1,16 @@
 .pad-container {
     position: relative;
-    width: 100%;
-    height: 100%;
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
     border-collapse: separate;
+    margin-left: -2px;
 }
 
 .pad-container .pad-col.pad-btn {
     background-color: var(--fg-color);
+    border-color: rgba(119, 136, 153, 0.39);
+    border-width: 1px;
+    border-style: ridge;
 }
 
 .pad-container .pad-col.pad-btn.btn-success {
@@ -40,10 +44,8 @@
     padding: 6px 12px;
     font-size: 14px;
     line-height: 1.42857143;
-}
-
-.pad-container .pad-col:not(.pad-label){
-    /*border: 1px solid rgba(119, 136, 153, 0.39);*/
+    box-shadow: none;
+    border-radius: 3px;
 }
 
 .pad-container .pad-col.disabled {
