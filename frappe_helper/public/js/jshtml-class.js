@@ -9,8 +9,12 @@ class JSHtml {
     #properties = {};
     #identifier = this.uuid();
     #listeners = {};
-    #content = "";
+    #content = undefined;
     #text = undefined;
+    #value = undefined;
+    #is_float = false;
+    #is_int = false;
+    #decimals = 2;
 
     constructor(options) {
         Object.assign(this, options);
@@ -19,35 +23,40 @@ class JSHtml {
         this.make();
         this.set_obj();
         this.default_listeners();
+        this.pad_editing = false;
 
         return this;
     }
 
-    set properties(val){this.#properties = val}
-    set content(val){this.#content = val}
-    set text(val){this.#text = val}
+    set properties(val) { this.#properties = val }
+    set content(val) { this.#content = val }
+    set text(val) { this.#text = val }
+    set cursor_position(val) {
+        this.#cursor_position = val;
+        if (this.#cursor_position < 0) this.#cursor_position = 0;
+    }
 
-    get obj(){return this.#obj}
-    get disabled(){return this.#disabled}
-    get cursor_position(){return this.#cursor_position}
-    get click_attempts(){return this.#click_attempts}
-    get confirming(){return this.#confirming}
-    get jshtml_identifier(){return this.#jshtml_identifier}
-    get $(){return this.#$}
-    get identifier(){return this.#identifier}
-    get properties(){return this.#properties}
-    get listeners(){return this.#listeners}
-    get float_val() {return isNaN(parseFloat(this.val())) ? 0.0 : parseFloat(this.val())}
-    get int_val() {return parseInt(isNaN(this.val()) ? 0 : this.val())}
-    get content(){return this.#content}
-    get text(){return this.#text}
+    get obj() { return this.#obj }
+    get disabled() { return this.#disabled }
+    get cursor_position() { return this.#cursor_position }
+    get click_attempts() { return this.#click_attempts }
+    get confirming() { return this.#confirming }
+    get jshtml_identifier() { return this.#jshtml_identifier }
+    get $() { return this.#$ }
+    get identifier() { return this.#identifier }
+    get properties() { return this.#properties }
+    get listeners() { return this.#listeners }
+    get float_val() { return isNaN(parseFloat(this.val())) ? 0.0 : parseFloat(this.val()) }
+    get int_val() { return parseInt(isNaN(this.val()) ? 0 : this.val()) }
+    get content() { return this.#content }
+    get text() { return this.#text }
 
     set_obj() {
-        if(this.obj != null) return;
+        if (this.obj != null) return;
         setTimeout(() => {
             this.#obj = document.querySelector(`${this.tag}[${this.identifier}='${this.identifier}']`);
             setTimeout(() => {
-                if(this.obj != null) this.#obj.removeAttribute(this.identifier);
+                if (this.obj != null) this.#obj.removeAttribute(this.identifier);
             });
             this.#$ = this.JQ();
         });
@@ -57,13 +66,13 @@ class JSHtml {
         this.#properties[this.identifier] = this.identifier;
     }
 
-    type() {
-        let types = ["input", "button", "select", "check", "radio"];
+    get type() {
+        let type = null;
+        ["input", "button", "select", "check", "radio"].forEach(t => {
+            if (t === this.tag) type = t;
+        });
 
-        if (types.includes(this.tag)) {
-            return types[this.tag];
-        }
-        return null;
+        return type;
     }
 
     make() {
@@ -74,10 +83,26 @@ class JSHtml {
         this.add_class(toggle_class).JQ().siblings(`.${base_class}.${toggle_class}`).removeClass(toggle_class);
     }
 
-    float() {
-        this.setInputFilter((value) => {
-            return /^-?\d*[.,]?\d*$/.test(value);
-        });
+    float(decimals = 2) {
+        this.#is_float = true;
+        this.is_editable = true;
+        this.#decimals = decimals;
+        if(this.type === 'input'){
+            this.setInputFilter((value) => {
+                return /^-?\d*[.,]?\d*$/.test(value);
+            });
+        }
+        return this;
+    }
+
+    int() {
+        this.#is_int = true;
+        this.is_editable = true;
+        if (this.type === 'input') {
+            this.setInputFilter((value) => {
+                return /^-?\d*$/.test(value);
+            });
+        }
         return this;
     }
 
@@ -123,7 +148,7 @@ class JSHtml {
                             }
                             this.#click_attempts = 1;
                             this.add_class(`${this.jshtml_identifier}-confirm`).JQ().delay(5000).queue((next) => {
-                                if(this.confirming){
+                                if (this.confirming) {
                                     this.reset_confirm();
                                     next();
                                 }
@@ -167,7 +192,7 @@ class JSHtml {
         return this;
     }
 
-    reset_confirm(){
+    reset_confirm() {
         this.#confirming = false;
         this.#click_attempts = 0;
         this.remove_class(`${this.jshtml_identifier}-confirm`);
@@ -180,14 +205,16 @@ class JSHtml {
         let _text = this.confirming ? __("Confirm") : this.text;
         if (typeof this.content != "undefined") {
             if (typeof _text != "undefined") {
-                if (this.content.search("{{text}}") === -1) {
+                if (this.content.toString().search("{{text}}") === -1) {
                     this.content = _text;
                     return this.content;
                 } else {
-                    return this.content.replace("{{text}}", text == null ? _text : text);
+                    return this.content.toString().replace("{{text}}", text || _text);
                 }
             } else {
-                if (text != null) this.content = text;
+                if (text) {
+                    this.content = text;
+                }
                 return this.content;
             }
         } else {
@@ -200,14 +227,29 @@ class JSHtml {
     }
 
     set_selection() {
-        this.#cursor_position = this.obj.selectionStart;
+        if (this.type === 'input') {
+            this.cursor_position = this.obj.selectionStart;
+        } else {
+            if ((this.is_int || this.is_float)) {
+                if (!isNaN(parseFloat(this.value))) {
+                    this.in_decimal = false;
+                    this.cursor_position = parseInt(this.val()).toString().length
+                }
+            } else {
+                this.#cursor_position = this.val().toString().length
+            }
+        }
     }
 
     default_listeners() {
         setTimeout(() => {
-            if (this.tag === "input") {
-                this.on(["click", "onkeydown", "onkeypress"], () => {
+            if (this.is_editable) {
+                this.on(["click", "onkeydown", "onkeypress"], (jshtml, obj, event) => {
                     this.set_selection();
+                });
+
+                this.on("change", (jshtml) => {
+                    if (jshtml && !jshtml.pad_editing) this.value = this.type == 'input' ? this.JQ().val() : this.JQ().html();
                 });
             }
         }, 0);
@@ -247,7 +289,7 @@ class JSHtml {
 
     css(prop = "", val = "") {
         setTimeout(() => {
-            if(this.obj){
+            if (this.obj) {
                 if (typeof prop == "object") {
                     prop.forEach((row) => {
                         this.obj.style[row.prop] = row.value;
@@ -317,10 +359,10 @@ class JSHtml {
     }
 
     delete_selection(value, move_position = 1) {
-        let current_value = this.val();
+        let current_value = this.val().toString();
         let current_selection = window.getSelection().toString();
 
-        this.#cursor_position = current_value.search(current_selection) + move_position;
+        this.cursor_position = current_value.search(current_selection) + move_position;
 
         this.val(current_value.replace(current_selection, value));
     }
@@ -332,20 +374,73 @@ class JSHtml {
     write(value) {
         if (this.is_disabled) return;
 
-        let current_value = this.val();
-
+        value = value.toString();
         if (this.has_selection()) {
             this.delete_selection(value);
             return;
         }
 
-        let left_value = current_value.substring(0, this.cursor_position);
-        let right_value = current_value.substring(this.cursor_position, current_value.length);
+        let raw_value = this.type != 'input' ? this.raw_value : this.val();
+        let editable_value = raw_value
+        let decimal_value = 0;
+        
+        if (raw_value.toString().length === 0) this.cursor_position = 0;
+        
+        if (this.is_float && this.type != 'input') {
+            if (value === ".") {
+                this.in_decimal = true;
+                return;
+            }
 
-        this.val(left_value + value + right_value);
+            if (!isNaN(parseFloat(raw_value))) {
+                decimal_value = raw_value.toString().split(".")[1];
+                decimal_value = typeof decimal_value != "undefined" && !isNaN(parseInt(decimal_value)) ? parseInt(decimal_value).toString() : "";
+                raw_value = parseInt(raw_value).toString();
+                editable_value = raw_value;
+            }
+        }
 
-        this.#cursor_position++;
+        if (this.in_decimal) {
+            if (this.cursor_position >= this.val().toString().length && this.val().toString().length > 0) return;
+
+            if (this.cursor_position == 0) {
+                if (decimal_value.toString().length > 1) {
+                    decimal_value = "";
+                } else {
+                    this.cursor_position = decimal_value.toString().length;
+                }
+            }
+            editable_value = decimal_value;
+        }
+
+        let left_value = editable_value.toString().substring(0, this.cursor_position).toString();
+        let right_value = editable_value.toString().substring(this.cursor_position, editable_value.length).toString();
+
+        let new_vslue = "";
+        if(this.type != 'input'){
+            if (this.in_decimal){
+                new_vslue = `${raw_value}.${left_value}${value}${right_value}`;
+            }else{
+                new_vslue = `${left_value}${value}${(parseInt(right_value) > 0 ? right_value : "")}${(decimal_value > 0 ? "." + decimal_value : "")}`;
+            }
+        }else{
+            new_vslue = `${left_value}${value}${right_value}`;
+        }
+
+        this.pad_editing = true;
+
+        this.val(new_vslue);
+
+        this.cursor_position = this.cursor_position + 1;
+
+        if (this.in_decimal && this.cursor_position > this.#decimals) {
+            this.cursor_position = this.raw_value.toString().length;
+        }
+
+        if (this.raw_value.toString().length == 0) this.in_decimal = false;
+
         this.trigger("change");
+        this.pad_editing = false;
     }
 
     plus(value = 1) {
@@ -362,21 +457,56 @@ class JSHtml {
         return this;
     }
 
-    val(val = null, change = true) {
-        if (val == null) {
-            if (this.tag === "input") {
-                return this.JQ().val();
-            } else {
-                return this.JQ().html();
-            }
+    get is_int() { return typeof this.#is_int == 'undefined' ? false : this.#is_int }
+    get is_float() { return typeof this.#is_float == 'undefined' ? false : this.#is_float }
+
+    get value() {
+        return this.#value
+    }
+
+    get raw_value() {
+        if ((this.is_float || this.is_int)) {
+            return isNaN(parseFloat(this.value)) ? "" : parseFloat(this.value).toString();
         } else {
-            if (typeof this.text != "undefined" && !this.confirming) this.text = val;
+            return this.value.toString();
+        }
+    }
+
+    set value(val) {
+        if (this.is_float) {
+            this.#value = parseFloat(val).toFixed(2);
+            if (isNaN(this.#value)) this.#value = "";
+        } else if (this.is_int) {
+            this.#value = parseInt(val);
+            if (isNaN(this.#value)) this.#value = "";
+        } else {
+            this.#value = val;
+        }
+    }
+
+    val(val = null, change = true, filter = false) {
+        if (val == null) {
+            if (typeof this.value == 'undefined') {
+                this.value = this.type == 'input' ? this.JQ().val() : this.JQ().html();
+            }
+            return this.value;
+
+        } else {
+            this.value = val;
+
+            if (!filter && this.properties.input_type === "number") {
+                if (this.value.toString().length > 0) {
+                    this.filter_number();
+                }
+            }
+            this.text = this.value;
+
             setTimeout(() => {
-                if (this.tag === "input") {
-                    this.JQ().val(val);
+                if (this.type === "input") {
+                    this.JQ().val(this.value);
                     if (change) this.trigger("change");
                 } else {
-                    this.empty().JQ().html(this.get_content_rendered(val));
+                    this.empty().JQ().html(this.get_content_rendered(this.value));
                 }
             }, 0);
 
@@ -450,32 +580,42 @@ class JSHtml {
                 this.trigger("change");
             }
 
-            this.#cursor_position = save_cursor_position;
+            this.cursor_position = save_cursor_position;
             this.focus();
         }, 0);
     }
 
     delete_value() {
         if (this.is_disabled) return;
-        let current_value = this.val();
+        let raw_value = this.raw_value;
+
+        if (raw_value.toString().length == 0) return;
 
         if (this.has_selection()) {
             this.delete_selection("", 0);
             return;
         }
 
-        let left_value = current_value.substring(0, this.cursor_position);
-        let right_value = current_value.substring(this.cursor_position, current_value.length);
-        let new_value;
+        let new_value = "";
 
-        if (this.cursor_position === this.val().length) {
-            new_value = left_value.substring(0, this.val().length - 1);
-            this.#cursor_position--;
+        let left_value = raw_value.substring(0, this.cursor_position);
+        let right_value = raw_value.substring(this.cursor_position, raw_value.length);
+
+        if (this.cursor_position === raw_value.length) {
+            new_value = left_value.substring(0, raw_value.length - 1);
+            this.cursor_position = this.cursor_position - 1;;
         } else {
             new_value = left_value.substring(0, this.cursor_position - 1) + right_value;
-            this.#cursor_position--;
+            this.cursor_position = this.cursor_position - 1;
         }
 
+        if (this.cursor_position === 0 && raw_value.length > 0) {
+            this.cursor_position = raw_value.length;
+        }
+
+        if (new_value.toString().length == 0) {
+            this.in_decimal = false;
+        }
         this.val(new_value);
     }
 
@@ -491,7 +631,7 @@ class JSHtml {
     }
 
     focus() {
-        this.#cursor_position = this.cursor_position < 0 ? 0 : this.cursor_position;
+        //this.cursor_position = this.cursor_position < 0 ? 0 : this.cursor_position;
         this.JQ().focus();
         let pos = this.cursor_position;
 
@@ -508,9 +648,9 @@ class JSHtml {
     };
 
     setInputFilter(inputFilter) {
-        setTimeout(() => {
-            ["input", "keydown", "keyup", "mousedown", "mouseup", "select", "contextmenu", "drop"].forEach((event) => {
-                this.obj.addEventListener(event, function () {
+        setTimeout(()=>{
+            ["input", "keydown", "keyup", "mousedown", "mouseup", "select", "contextmenu", "drop"].forEach((event)=> {
+                this.#obj.addEventListener(event, function () {
                     if (inputFilter(this.value)) {
                         this.oldValue = this.value;
                         this.oldSelectionStart = this.selectionStart;
@@ -523,7 +663,26 @@ class JSHtml {
                     }
                 });
             });
-        }, 0);
+        })
+    }
+
+    filter_number() {
+        let inputFilter = (value) => {
+            return /^-?\d*[.,]?\d*$/.test(value);
+        }
+
+        if (inputFilter(this.val())) {
+            this.oldValue = this.val();
+            this.oldSelectionStart = this.selectionStart;
+            this.oldSelectionEnd = this.selectionEnd;
+        } else if (this.hasOwnProperty("oldValue")) {
+            this.value = this.oldValue;
+            if (this.type === 'inpunt') {
+                this.setSelectionRange(this.oldSelectionStart, this.oldSelectionEnd);
+            }
+        } else {
+            this.value = "";
+        }
     }
 
     props_by_json(props = {}) {
