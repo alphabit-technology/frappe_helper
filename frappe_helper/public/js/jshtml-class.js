@@ -499,7 +499,7 @@ class JSHtml {
                     this.filter_number();
                 }
             }
-            this.text = this.value;
+            //this.text = this.value;
 
             setTimeout(() => {
                 if (this.type === "input") {
