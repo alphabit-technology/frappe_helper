@@ -166,6 +166,7 @@ class JSHtml {
     }
 
     set_content(content) {
+        console.log("set content")
         this.content = content;
         this.val("");
         return this;
@@ -193,6 +194,7 @@ class JSHtml {
     }
 
     reset_confirm() {
+        console.log("Reset confirm")
         this.#confirming = false;
         this.#click_attempts = 0;
         this.remove_class(`${this.jshtml_identifier}-confirm`);
@@ -499,7 +501,7 @@ class JSHtml {
                     this.filter_number();
                 }
             }
-            //this.text = this.value;
+            if(!this.#confirming) this.text = this.value;
 
             setTimeout(() => {
                 if (this.type === "input") {
