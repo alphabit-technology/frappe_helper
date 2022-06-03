@@ -6,7 +6,7 @@
 ### Frappe Helper includes the following functionalities:
 
 1. Extended Desk Form from frappe Web Form.
-1. Other experiemtal js files.
+1. Other experimental js files.
 
 
 ---
