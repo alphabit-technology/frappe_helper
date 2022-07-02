@@ -87,7 +87,7 @@ class JSHtml {
         this.#is_float = true;
         this.is_editable = true;
         this.#decimals = decimals;
-        if(this.type === 'input'){
+        if (this.type === 'input') {
             this.setInputFilter((value) => {
                 return /^-?\d*[.,]?\d*$/.test(value);
             });
@@ -383,9 +383,9 @@ class JSHtml {
         let raw_value = this.type != 'input' ? this.raw_value : this.val();
         let editable_value = raw_value
         let decimal_value = 0;
-        
+
         if (raw_value.toString().length === 0) this.cursor_position = 0;
-        
+
         if (this.is_float && this.type != 'input') {
             if (value === ".") {
                 this.in_decimal = true;
@@ -417,13 +417,13 @@ class JSHtml {
         let right_value = editable_value.toString().substring(this.cursor_position, editable_value.length).toString();
 
         let new_vslue = "";
-        if(this.type != 'input'){
-            if (this.in_decimal){
+        if (this.type != 'input') {
+            if (this.in_decimal) {
                 new_vslue = `${raw_value}.${left_value}${value}${right_value}`;
-            }else{
+            } else {
                 new_vslue = `${left_value}${value}${(parseInt(right_value) > 0 ? right_value : "")}${(decimal_value > 0 ? "." + decimal_value : "")}`;
             }
-        }else{
+        } else {
             new_vslue = `${left_value}${value}${right_value}`;
         }
 
@@ -499,7 +499,7 @@ class JSHtml {
                     this.filter_number();
                 }
             }
-            this.text = this.value;
+            if (!this.#confirming) this.text = this.value;
 
             setTimeout(() => {
                 if (this.type === "input") {
@@ -648,8 +648,8 @@ class JSHtml {
     };
 
     setInputFilter(inputFilter) {
-        setTimeout(()=>{
-            ["input", "keydown", "keyup", "mousedown", "mouseup", "select", "contextmenu", "drop"].forEach((event)=> {
+        setTimeout(() => {
+            ["input", "keydown", "keyup", "mousedown", "mouseup", "select", "contextmenu", "drop"].forEach((event) => {
                 this.#obj.addEventListener(event, function () {
                     if (inputFilter(this.value)) {
                         this.oldValue = this.value;
@@ -701,6 +701,13 @@ class JSHtml {
         });
 
         return "jshtml" + id;
+    }
+
+    highlight() {
+        this.add_class(`${this.jshtml_identifier}-confirm`).JQ().delay(10000).queue((next) => {
+            this.remove_class(`${this.jshtml_identifier}-confirm`);
+            next();
+        });
     }
 }
 

@@ -81,6 +81,7 @@ class DeskForm{
 	reload(){
 		$("div[data-fieldname=" + this.container + "]").empty();
 		this.load();
+		return this;
 	}
 
 	background_reload(){
@@ -90,10 +91,12 @@ class DeskForm{
 	show(){
 		this.modal.show();
 		this.init_clear_html();
+		return this;
 	}
 
 	hide(){
 		this.modal.hide();
+		return this;
 	}
 
 	init_clear_html(){
@@ -117,6 +120,7 @@ class FrappeForm{
 		Object.assign(this, DeskForm.options, {
 			wrapper: $("div[data-fieldname=" + DeskForm.container + "]"),
 		});
+		this.__desk_form = DeskForm;
 		this.container = DeskForm.container;
 		this.ready = false;
 		this.get_data(background);
@@ -135,6 +139,7 @@ class FrappeForm{
 			$("div[data-fieldname=" + this.container + "]").empty();
 			const { doc, desk_form, links } = r.message;
 			this.doc = doc;
+
 			desk_form.desk_form_fields.map(df => {
 				if (df.fieldtype === 'Table') {
 					df.get_data = () => {
@@ -163,6 +168,10 @@ class FrappeForm{
 		desk_form.desk_form_fields.map(df => {
 			if (df.fieldtype==='Attach') {
 				df.is_private = true;
+			}
+
+			if (df.fieldtype==='Table') {
+				console.log({df})
 			}
 
 			// Set defaults
@@ -195,16 +204,17 @@ class FrappeForm{
 
 		setTimeout(() => {
 			this.field_group.fields_list.forEach((field_instance) => {
-				let instance_value = field_instance.value;
+				const instance_value = field_instance.value;
 				if (instance_value != null && field_instance.df.fieldtype === "Attach" && instance_value.match(".(?:jpg|gif|jpeg|png)") ){
 					field_instance.$input_wrapper.append(`<img src=${field_instance.get_value()} width="auto" height=200>`);
 				}
 			});
+
 			this.ready = true;
 			$(".loading-form").remove();
-		}, 0);
 
-		this.set_initial_values(doc);
+			this.set_initial_values(doc);
+		}, 0);
 
 		if(typeof this.after_load != "undefined"){
 			this.after_load();
@@ -212,23 +222,28 @@ class FrappeForm{
 	}
 
 	set_initial_values(doc){
-		for(let field in this.initial_values) {
-			if(this.initial_values.hasOwnProperty(field)){
-				this.set_value(field, this.initial_values[field]);
-			}
-		}
+		Object.entries(this.initial_values || {}).forEach(([field, value]) => {
+			this.set_value(field, value);
+		});
 
-		for (let field in this.field_properties){
-			if(this.hasOwnProperty("field_properties")){
-				if(this.field_properties.hasOwnProperty(field)){
-					for ( let prop in this.field_properties[field]){
-						if(this.field_properties[field].hasOwnProperty(prop)){
-							this.set_field_property(field, prop, this.field_properties[field][prop])
-						}
-					}
-				}
+		Object.entries(this.field_properties || {}).forEach(([field, props]) => {
+			const child_field = field.split(".");
+			
+			if (child_field.length > 1) {
+				field = this.get_field(child_field[0]).grid.get_field(child_field[1]);
+
+			}else{
+				field = this.get_field(child_field[0]);
 			}
-		}
+
+			Object.entries(props).forEach(([prop, value]) => {
+				if(prop === "get_query") {
+					field.get_query = value;
+				}else{
+					this.set_field_property(field, prop, value);
+				}
+			});
+		});
 	}
 
 	get_form(){
@@ -268,10 +283,12 @@ class FrappeForm{
 		return this.field_group.set_value(fieldname, value);
 	}
 
-	set_field_property(fieldname, property, value) {
-		const field = this.get_field(fieldname);
+	set_field_property(field, property, value) {
+		field.df = field.df || {};
+
 		field.df[property] = value;
-		field.refresh();
+		
+		if(field.refresh) field.refresh();
 	}
 
 	on(fieldname, fn) {
@@ -284,6 +301,14 @@ class FrappeForm{
 
 	validate() {
 		return true;
+	}
+
+	reload() {
+		this.__desk_form.reload();
+	}
+
+	hide() {
+		this.__desk_form.hide();
 	}
 
 	save(for_payment, on_save=null) {
@@ -337,7 +362,7 @@ class FrappeForm{
 					}
 
 					if(typeof this.call_back != "undefined"){
-						this.call_back();
+						this.call_back(this);
 					}
 
 					if(on_save != null){
