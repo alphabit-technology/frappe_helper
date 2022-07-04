@@ -18,7 +18,6 @@ class DeskForm{
 			],
 			on_hide: () => {
 				close_grid_and_dialog();
-				this.stop_clear_html();
 			}
 		});
 
@@ -90,28 +89,12 @@ class DeskForm{
 
 	show(){
 		this.modal.show();
-		this.init_clear_html();
 		return this;
 	}
 
 	hide(){
 		this.modal.hide();
 		return this;
-	}
-
-	init_clear_html(){
-		this.interval_clear = setInterval(() => {
-			let base_object = $(document).find("[desk-form='desk-form']").find("[data-fieldtype='Table']");
-			if(base_object != null) {
-				base_object.find("div[data-fieldname='name']").hide();
-				base_object.find("button[data-action='delete_all_rows']").hide();
-				base_object.find(".grid-delete-row").hide();
-			}
-		}, 150);
-	}
-
-	stop_clear_html(){
-		clearInterval(this.interval_clear);
 	}
 }
 
@@ -171,7 +154,10 @@ class FrappeForm{
 			}
 
 			if (df.fieldtype==='Table') {
-				console.log({df})
+				df.in_place_edit = true;
+				df.fields.filter(f => f.fieldname === 'name').map(f => {
+					f.hidden = 1;
+				});
 			}
 
 			// Set defaults
@@ -208,6 +194,12 @@ class FrappeForm{
 				if (instance_value != null && field_instance.df.fieldtype === "Attach" && instance_value.match(".(?:jpg|gif|jpeg|png)") ){
 					field_instance.$input_wrapper.append(`<img src=${field_instance.get_value()} width="auto" height=200>`);
 				}
+
+				if (field_instance.df.fieldtype === "Table") {
+					['delete-row', 'duplicate-row', 'mov-row', 'append-row', 'insert-row', 'remove-all-rows'].forEach(class_name => {
+						field_instance.grid.wrapper.find(`.grid-${class_name}`).hide();
+					});
+				};
 			});
 
 			this.ready = true;
