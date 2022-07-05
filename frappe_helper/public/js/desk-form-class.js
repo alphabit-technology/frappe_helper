@@ -1,4 +1,4 @@
-class DeskForm{
+class DeskForm {
 	constructor(options) {
 		Object.assign(this, options);
 		this.container = "form-" + Math.random().toString(36).substr(2, 9);
@@ -9,12 +9,12 @@ class DeskForm{
 		this.show();
 	}
 
-	construct(){
+	construct() {
 		this.modal = new frappe.ui.Dialog({
 			title: this.title,
 			fields: [
-				{fieldname: this.container, fieldtype: 'HTML'},
-				{fieldname: 'ht', fieldtype: 'HTML'},
+				{ fieldname: this.container, fieldtype: 'HTML' },
+				{ fieldname: 'ht', fieldtype: 'HTML' },
 			],
 			on_hide: () => {
 				close_grid_and_dialog();
@@ -37,9 +37,9 @@ class DeskForm{
 			}
 		}
 
-		if (!this.disabled_to_save){
+		if (!this.disabled_to_save) {
 			this.modal.set_primary_action(__("Save"), () => {
-				if(this.form) {
+				if (this.form) {
 					this.form.save(this.has_payment);
 				}
 			});
@@ -49,8 +49,8 @@ class DeskForm{
 			`<div class='loading-form' style='font-size: xx-large; text-align: center; color: #8D99A6'>${__("Loading")}...</div>`
 		);
 
-		if(this.close_only_button){
-			this.modal.$wrapper.attr({"data-keyboard":"false", "data-backdrop": "static", "id": `${self.container}`})
+		if (this.close_only_button) {
+			this.modal.$wrapper.attr({ "data-keyboard": "false", "data-backdrop": "static", "id": `${self.container}` })
 		}
 
 		this.modal.$wrapper.prepend(`
@@ -70,36 +70,36 @@ class DeskForm{
 		}, 200);
 	}
 
-	load(background=false){
-		if(typeof this.before_load != "undefined"){
+	load(background = false) {
+		if (typeof this.before_load != "undefined") {
 			this.before_load()
 		}
 		this.form = new FrappeForm(this, background);
 	}
 
-	reload(){
+	reload() {
 		$("div[data-fieldname=" + this.container + "]").empty();
 		this.load();
 		return this;
 	}
 
-	background_reload(){
+	background_reload() {
 		this.load(true);
 	}
 
-	show(){
+	show() {
 		this.modal.show();
 		return this;
 	}
 
-	hide(){
+	hide() {
 		this.modal.hide();
 		return this;
 	}
 }
 
-class FrappeForm{
-	constructor(DeskForm, background=false) {
+class FrappeForm {
+	constructor(DeskForm, background = false) {
 		Object.assign(this, DeskForm.options, {
 			wrapper: $("div[data-fieldname=" + DeskForm.container + "]"),
 		});
@@ -109,7 +109,7 @@ class FrappeForm{
 		this.get_data(background);
 	}
 
-	get_data(background=false) {
+	get_data(background = false) {
 		frappe.call({
 			method: 'frappe_helper.frappe_helper.doctype.desk_form.desk_form.get_form_data',
 			args: {
@@ -117,17 +117,17 @@ class FrappeForm{
 				docname: this.docname,
 				form_name: this.form_name
 			},
-			freeze: background===false,
+			freeze: background === false,
 		}).then(r => {
 			$("div[data-fieldname=" + this.container + "]").empty();
 			const { doc, desk_form, links } = r.message;
 			this.doc = doc;
 
-			desk_form.desk_form_fields.map(df => {
+			desk_form.desk_form_fields.forEach(df => {
 				if (df.fieldtype === 'Table') {
 					df.get_data = () => {
 						let data = [];
-						if(doc) {
+						if (doc) {
 							data = doc[df.fieldname];
 						}
 						return data;
@@ -148,15 +148,15 @@ class FrappeForm{
 	render(doc, desk_form) {
 		const query_params = frappe.utils.get_query_params();
 
-		desk_form.desk_form_fields.map(df => {
-			if (df.fieldtype==='Attach') {
+		desk_form.desk_form_fields.forEach(df => {
+			if (df.fieldtype === 'Attach') {
 				df.is_private = true;
 			}
 
-			if (df.fieldtype==='Table') {
+			if (df.fieldtype === 'Table') {
 				df.in_place_edit = true;
-				df.fields.filter(f => f.fieldname === 'name').map(f => {
-					f.hidden = 1;
+				df.fields.forEach(f => {
+					if (f.fieldname === 'name') f.read_only = 1;
 				});
 			}
 
@@ -182,16 +182,16 @@ class FrappeForm{
 
 		this.wrapper.find(".form-column").unwrap(".section-body");
 
-		this.wrapper.attr({"desk-form": 'desk-form'});
+		this.wrapper.attr({ "desk-form": 'desk-form' });
 
-		if(doc) {
+		if (doc) {
 			this.field_group.set_values(doc);
 		}
 
 		setTimeout(() => {
 			this.field_group.fields_list.forEach((field_instance) => {
 				const instance_value = field_instance.value;
-				if (instance_value != null && field_instance.df.fieldtype === "Attach" && instance_value.match(".(?:jpg|gif|jpeg|png)") ){
+				if (instance_value != null && field_instance.df.fieldtype === "Attach" && instance_value.match(".(?:jpg|gif|jpeg|png)")) {
 					field_instance.$input_wrapper.append(`<img src=${field_instance.get_value()} width="auto" height=200>`);
 				}
 
@@ -208,42 +208,42 @@ class FrappeForm{
 			this.set_initial_values(doc);
 		}, 0);
 
-		if(typeof this.after_load != "undefined"){
+		if (typeof this.after_load != "undefined") {
 			this.after_load();
 		}
 	}
 
-	set_initial_values(doc){
+	set_initial_values(doc) {
 		Object.entries(this.initial_values || {}).forEach(([field, value]) => {
 			this.set_value(field, value);
 		});
 
 		Object.entries(this.field_properties || {}).forEach(([field, props]) => {
 			const child_field = field.split(".");
-			
+
 			if (child_field.length > 1) {
 				field = this.get_field(child_field[0]).grid.get_field(child_field[1]);
 
-			}else{
+			} else {
 				field = this.get_field(child_field[0]);
 			}
 
 			Object.entries(props).forEach(([prop, value]) => {
-				if(prop === "get_query") {
+				if (prop === "get_query") {
 					field.get_query = value;
-				}else{
+				} else {
 					this.set_field_property(field, prop, value);
 				}
 			});
 		});
 	}
 
-	get_form(){
-		return $("div[data-web-form='"+this.form_name+"']");
+	get_form() {
+		return $("div[data-web-form='" + this.form_name + "']");
 	}
 
 	get_values() {
-		let values = this.field_group.get_values(this.allow_incomplete);
+		const values = this.field_group.get_values(this.allow_incomplete);
 		if (!values) return null;
 		values.doctype = this.doctype;
 		values.name = this.docname;
@@ -279,8 +279,8 @@ class FrappeForm{
 		field.df = field.df || {};
 
 		field.df[property] = value;
-		
-		if(field.refresh) field.refresh();
+
+		if (field.refresh) field.refresh();
 	}
 
 	on(fieldname, fn) {
@@ -303,10 +303,10 @@ class FrappeForm{
 		this.__desk_form.hide();
 	}
 
-	save(for_payment, on_save=null) {
-		if(!this.ready) return;
+	save(for_payment, on_save = null) {
+		if (!this.ready) return;
 
-		if (this.validate()===false) {
+		if (this.validate() === false) {
 			return false;
 		}
 
@@ -335,15 +335,15 @@ class FrappeForm{
 			freeze: true,
 			btn: $form.find("[type='submit']"),
 			callback: (data) => {
-				if(!data.exc) {
+				if (!data.exc) {
 					this.doc_name = data.message.name;
 
-					if(frappe.is_new && frappe.login_required) {
+					if (frappe.is_new && frappe.login_required) {
 						// reload page (with ID)
 						window.location.href = window.location.pathname + "?name=" + frappe.doc_name;
 					}
 
-					if(for_payment && data.message) {
+					if (for_payment && data.message) {
 						// redirect to payment
 						window.location.href = data.message;
 					}
@@ -353,11 +353,11 @@ class FrappeForm{
 						this.desk_form.field_group.set_values(data.message);
 					}
 
-					if(typeof this.call_back != "undefined"){
+					if (typeof this.call_back != "undefined") {
 						this.call_back(this);
 					}
 
-					if(on_save != null){
+					if (on_save != null) {
 						on_save();
 					}
 
@@ -365,7 +365,7 @@ class FrappeForm{
 					frappe.msgprint(__('There were errors. Please report this.'));
 				}
 			},
-			always: function(r) {
+			always: function (r) {
 				window.saving = false;
 			}
 		});
