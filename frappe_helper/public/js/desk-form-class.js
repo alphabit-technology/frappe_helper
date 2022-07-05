@@ -154,9 +154,9 @@ class FrappeForm {
 			}
 
 			if (df.fieldtype === 'Table') {
-				df.in_place_edit = true;
+				//df.in_place_edit = true;
 				df.fields.forEach(f => {
-					if (f.fieldname === 'name') f.read_only = 1;
+					//if (f.fieldname === 'name') f.read_only = 1;
 				});
 			}
 
