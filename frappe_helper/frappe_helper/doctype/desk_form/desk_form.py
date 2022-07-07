@@ -32,7 +32,7 @@ class DeskForm(WebsiteGenerator):
 
 	def onload(self):
 		super(DeskForm, self).onload()
-		if self.is_standard and not frappe.conf.developer_mode:
+		if self.is_standard:
 			self.use_meta_fields()
 
 	def validate(self):
@@ -40,10 +40,6 @@ class DeskForm(WebsiteGenerator):
 
 		if not self.module:
 			self.module = frappe.db.get_value('DocType', self.doc_type, 'module')
-
-		if (not (frappe.flags.in_install or frappe.flags.in_patch or frappe.flags.in_test or frappe.flags.in_fixtures)
-			and self.is_standard and not frappe.conf.developer_mode):
-			frappe.throw(_("You need to be in developer mode to edit a Standard Desk Form"))
 
 		if not frappe.flags.in_import:
 			self.validate_fields()
