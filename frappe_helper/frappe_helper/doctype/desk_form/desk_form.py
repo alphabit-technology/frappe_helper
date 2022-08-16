@@ -18,7 +18,6 @@ from frappe import _, scrub
 from frappe.core.doctype.file.file import get_max_file_size, remove_file_by_url
 from frappe.custom.doctype.customize_form.customize_form import docfield_properties
 from frappe.desk.form.meta import get_code_files_via_hooks
-from frappe.integrations.utils import get_payment_gateway_controller
 from frappe.modules.utils import export_module_json, get_doc_module
 from frappe.utils import cstr
 from frappe.website.utils import get_comment_list
@@ -44,9 +43,6 @@ class DeskForm(WebsiteGenerator):
 		if not frappe.flags.in_import:
 			self.validate_fields()
 
-		if self.accept_payment:
-			self.validate_payment_amount()
-
 	def validate_fields(self):
 		'''Validate all fields are present'''
 		from frappe.model import no_value_fields
@@ -58,13 +54,6 @@ class DeskForm(WebsiteGenerator):
 
 		if missing:
 			frappe.throw(_('Following fields are missing:') + '<br>' + '<br>'.join(missing))
-
-	def validate_payment_amount(self):
-		if self.amount_based_on_field and not self.amount_field:
-			frappe.throw(_("Please select a Amount Field."))
-		elif not self.amount_based_on_field and not self.amount > 0:
-			frappe.throw(_("Amount must be greater than 0."))
-
 
 	def reset_field_parent(self):
 		'''Convert link fields to select with names as options'''
@@ -208,30 +197,6 @@ def get_context(context):
 				context.comment_list = get_comment_list(context.doc.doctype,
 					context.doc.name)
 
-	def get_payment_gateway_url(self, doc):
-		if self.accept_payment:
-			controller = get_payment_gateway_controller(self.payment_gateway)
-
-			title = "Payment for {0} {1}".format(doc.doctype, doc.name)
-			amount = self.amount
-			if self.amount_based_on_field:
-				amount = doc.get(self.amount_field)
-			payment_details = {
-				"amount": amount,
-				"title": title,
-				"description": title,
-				"reference_doctype": doc.doctype,
-				"reference_docname": doc.name,
-				"payer_email": frappe.session.user,
-				"payer_name": frappe.utils.get_fullname(frappe.session.user),
-				"order_id": doc.name,
-				"currency": self.currency,
-				"redirect_to": frappe.utils.get_url(self.success_url or self.route)
-			}
-
-			# Redirect the user to this url
-			return controller.get_payment_url(**payment_details)
-
 	def add_custom_context_and_script(self, context):
 		'''Update context from module if standard and append script'''
 		if self.desk_form_module:
@@ -345,11 +310,10 @@ def get_context(context):
 				+ '<br>'.join(['{0} ({1})'.format(d.label, d.fieldtype) for d in missing]))
 
 
-@frappe.whitelist(allow_guest=True)
-def accept(desk_form, data, docname=None, for_payment=False):
+@frappe.whitelist()
+def accept(desk_form, data, docname=None):
 	'''Save the desk form'''
 	data = frappe._dict(json.loads(data))
-	for_payment = frappe.parse_json(for_payment)
 
 	files = []
 	files_to_delete = []
@@ -386,10 +350,6 @@ def accept(desk_form, data, docname=None, for_payment=False):
 				files_to_delete.append(doc.get(fieldname))
 
 		doc.set(fieldname, value)
-
-	if for_payment:
-		desk_form.validate_mandatory(doc)
-		doc.run_method('validate_payment')
 
 	if doc.name:
 		if has_desk_form_permission(doc.doctype, doc.name, "write"):
@@ -440,10 +400,7 @@ def accept(desk_form, data, docname=None, for_payment=False):
 
 	frappe.flags.desk_form_doc = doc
 
-	if for_payment:
-		return desk_form.get_payment_gateway_url(doc)
-	else:
-		return doc
+	return doc
 
 @frappe.whitelist()
 def delete(desk_form_name, docname):

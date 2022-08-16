@@ -22,7 +22,7 @@ class NumPad {
                 9: {props: {class: "sm pad-btn"}},
                 Del: {
                     props: {class: "md pad-btn"},
-                    content: '<span class="fa fa-arrow-left pull-left" style="font-size: 16px; padding-top: 3px"/>',
+                    content: '<span class="fa fa-arrow-left pull-left" style="font-size: 16px; padding-top: 3px"></span>',
                     action: "delete"
                 },
             },
@@ -32,7 +32,7 @@ class NumPad {
                 6: {props: {class: "sm pad-btn"}},
                 Enter: {
                     props: {class: "md pad-btn", rowspan: "3"},
-                    content: '<br><br><span class="fa fa-level-down" style="font-size: 25px; transform: rotate(90deg);"/>',
+                    content: '<br><br><span class="fa fa-level-down" style="font-size: 25px; transform: rotate(90deg);"></span>',
                     action: "enter"
                 },
             },
