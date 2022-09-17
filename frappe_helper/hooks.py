@@ -12,9 +12,13 @@ app_email = "quantumbitcore.io@gmail.com"
 app_license = "MIT"
 
 app_include_css = [
+	"/assets/frappe_helper/css/desk-form.css",
     "/assets/frappe_helper/css/frappe-helper.css",
     "/assets/frappe_helper/css/num-pad.css",
 ]
+
+after_migrate = "frappe_helper.setup.install.after_install"
+after_install = "frappe_helper.setup.install.after_install"
 
 # Includes in <head>
 # ------------------
@@ -25,6 +29,7 @@ app_include_js = [
     "/assets/frappe_helper/js/num-pad-class.js",
     "/assets/frappe_helper/js/desk-modal.js",
     "/assets/frappe_helper/js/frappe-helper-api.js",
+    "/assets/frappe_helper/js/frappe-form-class.js",
     "/assets/frappe_helper/js/desk-form-class.js",
 ]
 

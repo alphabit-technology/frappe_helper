@@ -19,4 +19,5 @@ class FrappeHelperApi {
         });
     }
 }
-let frappeHelper = new FrappeHelperApi();
+
+const frappeHelper = new FrappeHelperApi();

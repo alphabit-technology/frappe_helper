@@ -18,25 +18,46 @@ from frappe import _, scrub
 from frappe.core.doctype.file.file import get_max_file_size, remove_file_by_url
 from frappe.custom.doctype.customize_form.customize_form import docfield_properties
 from frappe.desk.form.meta import get_code_files_via_hooks
-from frappe.integrations.utils import get_payment_gateway_controller
 from frappe.modules.utils import export_module_json, get_doc_module
 from frappe.utils import cstr
 from frappe.website.utils import get_comment_list
-from frappe.website.website_generator import WebsiteGenerator
+from frappe.model.document import Document
 
 
-class DeskForm(WebsiteGenerator):
-	website = frappe._dict(
-		no_cache = 1
-	)
+class DeskForm(Document):
+	def updateJsonFile(self):
+		app = frappe.db.get_value('Module Def', self.module, 'app_name')
+		path = os.path.abspath(os.path.dirname(__file__))
+		path = os.path.join(path.split(
+			"apps")[0], "apps", app, app, app, 'desk_form')
+
+		file_name = self.name.replace('-', '_')
+
+		file_path = os.path.join(path, file_name, file_name + '.json')
+
+		jsonFile = open(file_path, "r") # Open the JSON file for reading
+		data = json.load(jsonFile) # Read the JSON into the buffer
+		jsonFile.close() # Close the JSON file
+
+		## Working with buffered content
+		tmp = data
+		tmp["docstatus"] = 1
+
+		## Save our changes to JSON file
+		jsonFile = open(file_path, "w+")
+		jsonFile.write(json.dumps(tmp))
+		jsonFile.close()
+
+	def after_delete(self):
+		self.updateJsonFile()
 
 	def onload(self):
-		super(DeskForm, self).onload()
+		#super(DeskForm, self).onload()
 		if self.is_standard:
 			self.use_meta_fields()
 
 	def validate(self):
-		super(DeskForm, self).validate()
+		#super(DeskForm, self).validate()
 
 		if not self.module:
 			self.module = frappe.db.get_value('DocType', self.doc_type, 'module')
@@ -44,27 +65,18 @@ class DeskForm(WebsiteGenerator):
 		if not frappe.flags.in_import:
 			self.validate_fields()
 
-		if self.accept_payment:
-			self.validate_payment_amount()
-
 	def validate_fields(self):
 		'''Validate all fields are present'''
 		from frappe.model import no_value_fields
 		missing = []
 		meta = frappe.get_meta(self.doc_type)
+
 		for df in self.desk_form_fields:
-			if df.fieldname and (df.fieldtype not in no_value_fields and not meta.has_field(df.fieldname)):
+			if df.fieldname and (df.fieldtype not in no_value_fields and not meta.has_field(df.fieldname) and not df.extra_field):
 				missing.append(df.fieldname)
 
 		if missing:
-			frappe.throw(_('Following fields are missing:') + '<br>' + '<br>'.join(missing))
-
-	def validate_payment_amount(self):
-		if self.amount_based_on_field and not self.amount_field:
-			frappe.throw(_("Please select a Amount Field."))
-		elif not self.amount_based_on_field and not self.amount > 0:
-			frappe.throw(_("Amount must be greater than 0."))
-
+			frappe.throw(_('Following fields are missing:') + ' in DeskForm ' + self.title + '<br>' + '<br>'.join(missing))
 
 	def reset_field_parent(self):
 		'''Convert link fields to select with names as options'''
@@ -208,30 +220,6 @@ def get_context(context):
 				context.comment_list = get_comment_list(context.doc.doctype,
 					context.doc.name)
 
-	def get_payment_gateway_url(self, doc):
-		if self.accept_payment:
-			controller = get_payment_gateway_controller(self.payment_gateway)
-
-			title = "Payment for {0} {1}".format(doc.doctype, doc.name)
-			amount = self.amount
-			if self.amount_based_on_field:
-				amount = doc.get(self.amount_field)
-			payment_details = {
-				"amount": amount,
-				"title": title,
-				"description": title,
-				"reference_doctype": doc.doctype,
-				"reference_docname": doc.name,
-				"payer_email": frappe.session.user,
-				"payer_name": frappe.utils.get_fullname(frappe.session.user),
-				"order_id": doc.name,
-				"currency": self.currency,
-				"redirect_to": frappe.utils.get_url(self.success_url or self.route)
-			}
-
-			# Redirect the user to this url
-			return controller.get_payment_url(**payment_details)
-
 	def add_custom_context_and_script(self, context):
 		'''Update context from module if standard and append script'''
 		if self.desk_form_module:
@@ -345,11 +333,11 @@ def get_context(context):
 				+ '<br>'.join(['{0} ({1})'.format(d.label, d.fieldtype) for d in missing]))
 
 
-@frappe.whitelist(allow_guest=True)
-def accept(desk_form, data, docname=None, for_payment=False):
+@frappe.whitelist()
+def accept(desk_form, data, doc_name=None):
 	'''Save the desk form'''
 	data = frappe._dict(json.loads(data))
-	for_payment = frappe.parse_json(for_payment)
+	doctype = data.doctype if not data.doctype else frappe.db.get_value('Desk Form', desk_form, 'doc_type')
 
 	files = []
 	files_to_delete = []
@@ -360,14 +348,14 @@ def accept(desk_form, data, docname=None, for_payment=False):
 		frappe.throw(_("You are not allowed to update this Desk Form Document"))
 
 	frappe.flags.in_desk_form = True
-	meta = frappe.get_meta(data.doctype)
+	meta = frappe.get_meta(doctype)
 
-	if docname:
+	if doc_name:
 		# update
-		doc = frappe.get_doc(data.doctype, docname)
+		doc = frappe.get_doc(doctype, doc_name)
 	else:
 		# insert
-		doc = frappe.new_doc(data.doctype)
+		doc = frappe.new_doc(doctype)
 
 	# set values
 	for field in desk_form.desk_form_fields:
@@ -387,12 +375,8 @@ def accept(desk_form, data, docname=None, for_payment=False):
 
 		doc.set(fieldname, value)
 
-	if for_payment:
-		desk_form.validate_mandatory(doc)
-		doc.run_method('validate_payment')
-
 	if doc.name:
-		if has_desk_form_permission(doc.doctype, doc.name, "write"):
+		if has_desk_form_permission(doctype, doc.name, "write"):
 			doc.save(ignore_permissions=True)
 		else:
 			# only if permissions are present
@@ -414,14 +398,14 @@ def accept(desk_form, data, docname=None, for_payment=False):
 
 			# remove earlier attached file (if exists)
 			if doc.get(fieldname):
-				remove_file_by_url(doc.get(fieldname), doctype=doc.doctype, name=doc.name)
+				remove_file_by_url(doc.get(fieldname), doctype=doctype, name=doc.name)
 
 			# save new file
 			filename, dataurl = filedata.split(',', 1)
 			_file = frappe.get_doc({
 				"doctype": "File",
 				"file_name": filename,
-				"attached_to_doctype": doc.doctype,
+				"attached_to_doctype": doctype,
 				"attached_to_name": doc.name,
 				"content": dataurl,
 				"decode": True})
@@ -435,15 +419,12 @@ def accept(desk_form, data, docname=None, for_payment=False):
 	if files_to_delete:
 		for f in files_to_delete:
 			if f:
-				remove_file_by_url(doc.get(fieldname), doctype=doc.doctype, name=doc.name)
+				remove_file_by_url(doc.get(fieldname), doctype=doctype, name=doc.name)
 
 
 	frappe.flags.desk_form_doc = doc
 
-	if for_payment:
-		return desk_form.get_payment_gateway_url(doc)
-	else:
-		return doc
+	return doc
 
 @frappe.whitelist()
 def delete(desk_form_name, docname):
@@ -503,7 +484,7 @@ def check_webform_perm(doctype, name):
 		if doc.has_webform_permission():
 			return True
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=False)
 def get_desk_form_filters(desk_form_name):
 	desk_form = frappe.get_doc("Desk Form", desk_form_name)
 	return [field for field in desk_form.desk_form_fields if field.show_in_filter]
@@ -518,8 +499,13 @@ def make_route_string(parameters):
 				delimeter = '&'
 	return (route_string, delimeter)
 
-@frappe.whitelist(allow_guest=True)
-def get_form_data(doctype, docname=None, form_name=None):
+
+@frappe.whitelist(allow_guest=False)
+def get_doc(doctype, doc_name=None):
+	return frappe.get_doc(doctype, doc_name)
+
+@frappe.whitelist(allow_guest=False)
+def get_form(form_name=None):
 	desk_form = frappe.get_doc('Desk Form', form_name)
 
 	if desk_form.login_required and frappe.session.user == 'Guest':
@@ -528,30 +514,37 @@ def get_form_data(doctype, docname=None, form_name=None):
 	out = frappe._dict()
 	out.desk_form = desk_form
 
-	if frappe.session.user != 'Guest' and not docname and not desk_form.allow_multiple:
-		docname = frappe.db.get_value(doctype, {"owner": frappe.session.user}, "name")
-
-	if docname:
-		doc = frappe.get_doc(doctype, docname)
-		out.doc = doc
-	"""if has_desk_form_permission(doctype, docname, ptype='read'):
-		out.doc = doc
-	else:
-		frappe.throw(_("Not permitted"), frappe.PermissionError)"""
-
 	# For Table fields, server-side processing for meta
 	for field in out.desk_form.desk_form_fields:
 		if field.fieldtype == "Table":
 			field.fields = get_in_list_view_fields(field.options)
 			out.update({field.fieldname: field.fields})
 
-		"""if field.fieldtype == "Link":
-			field.fieldtype = "Autocomplete"
-			field.options = get_link_options(
-				form_name,
-				field.options,
-				field.allow_read_on_all_link_options
-			)"""
+	return out
+
+@frappe.whitelist(allow_guest=False)
+def get_form_data(form_name=None, doc_name=None):
+	desk_form = frappe.get_doc('Desk Form', form_name)
+
+	if desk_form.login_required and frappe.session.user == 'Guest':
+		frappe.throw(_("Not Permitted"), frappe.PermissionError)
+
+	out = frappe._dict()
+	out.desk_form = desk_form
+
+	if frappe.session.user != 'Guest' and not doc_name and not desk_form.allow_multiple:
+		doc_name = frappe.db.get_value(
+			desk_form.doc_type, {"owner": frappe.session.user}, "name")
+
+	if doc_name:
+		doc = frappe.get_doc(desk_form.doc_type, doc_name)
+		out.doc = doc
+
+	# For Table fields, server-side processing for meta
+	for field in out.desk_form.desk_form_fields:
+		if field.fieldtype == "Table":
+			field.fields = get_in_list_view_fields(field.options)
+			out.update({field.fieldname: field.fields})
 
 	return out
 

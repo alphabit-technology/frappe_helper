@@ -14,6 +14,7 @@
   "read_only",
   "show_in_filter",
   "hidden",
+  "extra_field",
   "column_break_4",
   "options",
   "max_length",
@@ -117,11 +118,17 @@
    "fieldname": "default",
    "fieldtype": "Data",
    "label": "Default"
+  },
+  {
+   "default": "0",
+   "fieldname": "extra_field",
+   "fieldtype": "Check",
+   "label": "Extra Field"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2021-07-15 19:10:01.107899",
+ "modified": "2022-09-01 20:10:18.860507",
  "modified_by": "Administrator",
  "module": "Frappe Helper",
  "name": "Desk Form Field",

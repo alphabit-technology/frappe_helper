@@ -4,8 +4,8 @@
 frappe.desk_form = {
 	set_fieldname_select: function(frm) {
 		return new Promise(resolve => {
-			var me = this,
-				doc = frm.doc;
+			var me = this, doc = frm.doc;
+			
 			if (doc.doc_type) {
 				frappe.model.with_doctype(doc.doc_type, function() {
 					var fields = $.map(frappe.get_doc("DocType", frm.doc.doc_type).fields, function(d) {
@@ -27,8 +27,7 @@ frappe.desk_form = {
 					frm.fields_dict.desk_form_fields.grid.update_docfield_property(
 						'fieldname', 'options', fields
 					);
-					frappe.meta.get_docfield("Desk Form", "amount_field", frm.doc.name).options = [""].concat(currency_fields);
-					frm.refresh_field("amount_field");
+					
 					resolve();
 				});
 			}
@@ -78,6 +77,7 @@ frappe.ui.form.on("Desk Form", {
 	},
 
 	title: function(frm) {
+		console.log(["set form title"])
 		if (frm.doc.__islocal) {
 			var page_name = frm.doc.title.toLowerCase().replace(/ /g, "-");
 			frm.set_value("route", page_name);

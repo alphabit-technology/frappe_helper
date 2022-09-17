@@ -1,0 +1,9 @@
+.desk-form .grid-delete-row,
+ .desk-form .grid-duplicate-row, 
+ .desk-form .grid-move-row, 
+ .desk-form .grid-append-row,
+ .desk-form .grid-insert-row, 
+ .desk-form .grid-remove-all-rows,
+ .desk-form .grid-insert-row-below {
+    display: none !important;
+}

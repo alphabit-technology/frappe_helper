@@ -18,6 +18,7 @@ class JSHtml {
 
     constructor(options) {
         Object.assign(this, options);
+
         this.#properties = (typeof options.properties == "undefined" ? {} : options.properties);
         this.fusion_props();
         this.make();
@@ -57,9 +58,9 @@ class JSHtml {
             this.#obj = document.querySelector(`${this.tag}[${this.identifier}='${this.identifier}']`);
             setTimeout(() => {
                 if (this.obj != null) this.#obj.removeAttribute(this.identifier);
-            });
+            }, 0);
             this.#$ = this.JQ();
-        });
+        }, 0);
     }
 
     fusion_props() {
@@ -162,7 +163,7 @@ class JSHtml {
                     }
                 });
             }, listener, fn);
-        }, 0);
+        }, 10);
     }
 
     set_content(content) {
@@ -172,13 +173,13 @@ class JSHtml {
     }
 
     make_dom() {
-        setTimeout(() => {
+        //setTimeout(() => {
             if (typeof this.wrapper == "undefined" || this.wrapper == null) {
                 return this.html();
             } else {
                 $(this.wrapper).append(this.html());
             }
-        }, 0);
+        //}, 0);
     }
 
     html() {
@@ -261,6 +262,10 @@ class JSHtml {
 
     get_attr(attr = "") {
         return this.obj.getAttribute(attr);
+    }
+
+    find(selector) {
+        return this.JQ().find(selector);
     }
 
     enable(on_enable = true) {
