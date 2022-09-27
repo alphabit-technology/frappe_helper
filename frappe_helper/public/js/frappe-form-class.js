@@ -4,47 +4,91 @@ class FrappeForm extends frappe.ui.FieldGroup {
 	background = false;
 	buttons = {};
 	button_label = "Save";
+	fetch_dict = {};
 
 	constructor(props) {
 		super(props);
 	}
 
+	get_meta() {
+		return this.#get("get_meta", {doctype: this.doctype});
+	}
+
 	async initialize() {
 		this.form_name = this.desk_form ? this.desk_form.name : this.form_name;
 		this.form_name = this.form_name.replaceAll(" ", "-").toLowerCase();
-
+		
 		if(!this.desk_form && !this.doc) {
 			await this.get_all();
-		}else if(!this.desk_form){
-			this.desk_form = await this.get_form();
-		}else if(!this.doc){
-			this.doc = await this.get_doc();
 		}
-
-		this.doctype = this.desk_form.doc_type;
-		this.fields = this.desk_form.desk_form_fields;
-		this.last_data = JSON.stringify(this.doc);
 		
+		if(!this.desk_form) this.desk_form = await this.get_form();
+		this.doctype = this.desk_form.doc_type;
+
+		if (!this.doc && this.doc_name) this.doc = await this.get_doc();
+
+		this.fields = this.desk_form.desk_form_fields;
+		
+
+		//new FrappeFormTest(this.doctype, this.desk_form, this.body, false, null, this.doc);
 		await this.make();
 	}
 
  	async make() {
+		const setup_add_fetch = (df_fetch_from, df_fetch_to, parent=null) => {
+			df_fetch_from.onchange = (e) => {
+				if ((['Data', 'Read Only', 'Text', 'Small Text', 'Currency', 'Check',
+					'Text Editor', 'Code', 'Link', 'Float', 'Int', 'Date', 'Select'].includes(df_fetch_to.fieldtype) || df_fetch_to.read_only == 1)) {
+
+					if(parent) {
+						const table_input = this.get_field(parent.fieldname).grid;
+						const data = table_input.data;
+
+						data.forEach((row, index) => {
+							const row_input = table_input.get_row(index);
+							const link_fetch = row_input.columns[df_fetch_from.fieldname].field;
+							const target_fetch_input = row_input.columns[df_fetch_to.fieldname].field;
+
+							this.fetch_link(link_fetch, target_fetch_input);
+						});
+					} else {
+						const link_fetch = this.get_field(df_fetch_from.fieldname);
+						const target_fetch_input = this.get_field(df_fetch_to.fieldname);
+
+						this.fetch_link(link_fetch, target_fetch_input);
+					}
+				}
+			}
+		}
+
 		return new Promise(resolve => {
 			this.desk_form.desk_form_fields.forEach(df => {
+				if (df.fetch_from) {
+					setup_add_fetch(this.desk_form.desk_form_fields.find(field => field.fieldname === df.fetch_from.split(".")[0]) || {}, df);
+				}
+
 				if (df.fieldtype === 'Table') {
 					df.get_data = () => {
 						return this.doc ? this.doc[df.fieldname] : [];
 					};
 
-					df.options = null;
-
 					if (this.data.hasOwnProperty(df.fieldname)) {
 						df.fields = this.data[df.fieldname];
 					}
 
-					df.fields.forEach(f => {
+					(df.fields || []).forEach(f => {
+						if(f.fetch_from){
+							setup_add_fetch(
+								df.fields.find(field => field.fieldname === f.fetch_from.split(".")[0]) || {},
+								f,
+								df
+							);
+						}
 						if (f.fieldname === 'name') f.hidden = 1;
 					});
+
+					df.options = null;
+
 				}else{
 					if(df.read_only){
 						df.doctype = null;
@@ -61,12 +105,39 @@ class FrappeForm extends frappe.ui.FieldGroup {
 			super.make();
 
 			setTimeout(() => {
-				if (typeof this.after_load != "undefined") {
-					this.after_load(this);
-				}
+				this.after_load && this.after_load(this);
 			}, 500);
 			
 			resolve();
+		});
+	}
+
+	fetch_link(link_fetch, target_input) {
+		if (!target_input) return;
+
+		const doctype = link_fetch.df.options;
+		const from_col = target_input.df.fetch_from.split('.')[1];
+		const doc_name = link_fetch.get_value();
+		
+		if(link_fetch.last_value === doc_name) return;
+		link_fetch.last_value = doc_name;
+
+		frappe.call({
+			method: 'frappe.desk.form.utils.validate_link',
+			type: "GET",
+			args: {
+				'value': doc_name,
+				'options': doctype,
+				'fetch': from_col
+			},
+			no_spinner: true,
+			callback: (r) => {
+				if (r.message == 'Ok') {
+					if (r.fetch_values) {
+						target_input.set_value(r.fetch_values[0]);
+					}
+				}
+			}
 		});
 	}
 
@@ -77,8 +148,8 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		this.on_refresh && this.on_refresh();
 	}
 
-
 	refresh_fields(){
+
 		this.desk_form.desk_form_fields.forEach(df => {
 			if (df.read_only) {
 				df.doctype = null;
@@ -194,10 +265,9 @@ class FrappeForm extends frappe.ui.FieldGroup {
 
 	refresh_dependency() {
 		super.refresh_dependency();
-		if(this.reloading) return;
 
-		///setTimeout(() => {
-			this.on_refresh_dependency && this.on_refresh_dependency(this);
-		//}, 200);
+		if(this.reloading) return;		
+
+		this.on_refresh_dependency && this.on_refresh_dependency(this);
 	}
 }

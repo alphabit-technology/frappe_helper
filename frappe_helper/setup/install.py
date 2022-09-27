@@ -13,7 +13,7 @@ def after_install():
 def insert_desk_form(form_data):
     desk_form = frappe.new_doc("Desk Form")
     desk_form.update(form_data)
-    desk_form.set("docstatus", 1)
+    desk_form.set("docstatus", 0)
 
     print("    Inserting Desk Form: {}".format(form_data.get("name")))
 

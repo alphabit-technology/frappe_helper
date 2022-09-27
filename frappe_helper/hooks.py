@@ -30,7 +30,7 @@ app_include_js = [
     "/assets/frappe_helper/js/desk-modal.js",
     "/assets/frappe_helper/js/frappe-helper-api.js",
     "/assets/frappe_helper/js/frappe-form-class.js",
-    "/assets/frappe_helper/js/desk-form-class.js",
+    "/assets/frappe_helper/js/desk-form-class.js"
 ]
 
 

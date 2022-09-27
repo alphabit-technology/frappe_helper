@@ -65,6 +65,7 @@ class DeskForm extends FrappeForm {
 			}
 		}
 
+		this.body.show();
 		this.show();
 	}
 
@@ -118,25 +119,23 @@ class DeskForm extends FrappeForm {
 
 			if (child_field.length > 1) {
 				field = this.get_field(child_field[0]).grid.get_field(child_field[1]);
-
 			} else {
 				field = this.get_field(child_field[0]);
 			}
 
 			Object.entries(props).forEach(([prop, value]) => {
-				if (prop === "get_query") {
-					field.get_query = value;
-				} else {
-					this.set_field_property(field.df.fieldname, prop, value);
+				if(field && field.df){
+					if (prop === "get_query") {
+						field.get_query = value;
+					} else if(prop === "on_change"){
+						field.df.on_change = value;
+					} else if(prop === "value") {
+						field.set_value(value);
+					}else{
+						this.set_field_property(field.df.fieldname, prop, value);
+					}
 				}
 			});
-		});
-
-		this.fields_list.forEach(field_instance => {
-			const instance_value = field_instance.value;
-			if (instance_value != null && field_instance.df.fieldtype === "Attach" && instance_value.match(".(?:jpg|gif|jpeg|png)")) {
-				field_instance.$input_wrapper.append(`<img src=${field_instance.get_value()} width="auto" height=200>`);
-			}
 		});
 	}
 
@@ -164,7 +163,6 @@ class DeskForm extends FrappeForm {
 	}
 
 	show() {
-		//this.last_data = JSON.stringify(this.doc);
 		this.is_hide = false;
 		this._wrapper.show();
 		return this;

@@ -350,12 +350,7 @@ def accept(desk_form, data, doc_name=None):
 	frappe.flags.in_desk_form = True
 	meta = frappe.get_meta(doctype)
 
-	if doc_name:
-		# update
-		doc = frappe.get_doc(doctype, doc_name)
-	else:
-		# insert
-		doc = frappe.new_doc(doctype)
+	doc = get_doc(doctype, doc_name)
 
 	# set values
 	for field in desk_form.desk_form_fields:
@@ -375,21 +370,20 @@ def accept(desk_form, data, doc_name=None):
 
 		doc.set(fieldname, value)
 
-	if doc.name:
+	if doc.new:
+		# insert
+		if desk_form.login_required and frappe.session.user == "Guest":
+			frappe.throw(_("You must login to submit this form"))
+
+		ignore_mandatory = True if files else False
+
+		doc.insert(ignore_permissions=True, ignore_mandatory=ignore_mandatory)
+	else:
 		if has_desk_form_permission(doctype, doc.name, "write"):
 			doc.save(ignore_permissions=True)
 		else:
 			# only if permissions are present
 			doc.save()
-
-	else:
-		# insert
-		if desk_form.login_required and frappe.session.user=="Guest":
-			frappe.throw(_("You must login to submit this form"))
-
-		ignore_mandatory = True if files else False
-
-		doc.insert(ignore_permissions = True, ignore_mandatory = ignore_mandatory)
 
 	# add files
 	if files:
@@ -489,6 +483,20 @@ def get_desk_form_filters(desk_form_name):
 	desk_form = frappe.get_doc("Desk Form", desk_form_name)
 	return [field for field in desk_form.desk_form_fields if field.show_in_filter]
 
+
+@frappe.whitelist(allow_guest=False)
+def get_fetch_values(doctype, txt, searchfield, start, page_len, filters):
+	if not frappe.has_permission(doctype):
+		frappe.msgprint(_("No Permission"), raise_exception=True)
+
+	if not filters:
+		filters = {}
+
+	filters.update({searchfield: ["like", "%" + txt + "%"]})
+
+	return frappe.get_all(doctype, fields=["name", searchfield], filters=filters,
+		order_by=searchfield, limit_start=start, limit_page_length=page_len)
+
 def make_route_string(parameters):
 	route_string = ""
 	delimeter = '?'
@@ -501,8 +509,24 @@ def make_route_string(parameters):
 
 
 @frappe.whitelist(allow_guest=False)
+def get_meta(doctype = None):
+	return frappe.get_doc("DocType", doctype)
+
+
+@frappe.whitelist(allow_guest=False)
 def get_doc(doctype, doc_name=None):
-	return frappe.get_doc(doctype, doc_name)
+	name = frappe.db.get_value(doctype, {"name": doc_name}) if doc_name else None
+	if name:
+		doc = frappe.get_doc(doctype, name)
+		doc.new = False
+		return doc
+	else:
+		doc = frappe.new_doc(doctype)
+		if doc_name:
+			doc.set("name", doc_name)
+
+		doc.new = True
+		return doc
 
 @frappe.whitelist(allow_guest=False)
 def get_form(form_name=None):
@@ -536,9 +560,11 @@ def get_form_data(form_name=None, doc_name=None):
 		doc_name = frappe.db.get_value(
 			desk_form.doc_type, {"owner": frappe.session.user}, "name")
 
-	if doc_name:
-		doc = frappe.get_doc(desk_form.doc_type, doc_name)
-		out.doc = doc
+	doc = get_doc(desk_form.doc_type, doc_name)
+	out.doc = doc
+	#if doc_name:
+	#	doc = frappe.get_doc(desk_form.doc_type, doc_name)
+	#	out.doc = doc
 
 	# For Table fields, server-side processing for meta
 	for field in out.desk_form.desk_form_fields:
