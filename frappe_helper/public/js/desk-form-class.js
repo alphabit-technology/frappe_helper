@@ -124,15 +124,19 @@ class DeskForm extends FrappeForm {
 			}
 
 			Object.entries(props).forEach(([prop, value]) => {
-				if(field && field.df){
+				if(field){
 					if (prop === "get_query") {
 						field.get_query = value;
-					} else if(prop === "on_change"){
-						field.df.on_change = value;
-					} else if(prop === "value") {
+					} else if (prop === "value") {
 						field.set_value(value);
-					}else{
-						this.set_field_property(field.df.fieldname, prop, value);
+					}
+
+					if(field.df){
+						if(field.df && prop === "on_change"){
+							field.df.on_change = value;
+						}else{
+							this.set_field_property(field.df.fieldname, prop, value);
+						}
 					}
 				}
 			});
