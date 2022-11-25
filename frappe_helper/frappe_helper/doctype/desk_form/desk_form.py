@@ -71,7 +71,11 @@ class DeskForm(Document):
 		missing = []
 		meta = frappe.get_meta(self.doc_type)
 
+
 		for df in self.desk_form_fields:
+			if not df.fieldname and df.label:
+				df.fieldname = scrub(df.label)
+
 			if df.fieldname and (df.fieldtype not in no_value_fields and not meta.has_field(df.fieldname) and not df.extra_field):
 				missing.append(df.fieldname)
 
@@ -354,7 +358,8 @@ def accept(desk_form, data, doc_name=None):
 
 	# set values
 	for field in desk_form.desk_form_fields:
-		fieldname = field.fieldname
+		fieldname = field.fieldname# or field.label.replace(' ', '_').lower()
+		#frappe.throw(fieldname)
 		df = meta.get_field(fieldname)
 		value = data.get(fieldname, None)
 

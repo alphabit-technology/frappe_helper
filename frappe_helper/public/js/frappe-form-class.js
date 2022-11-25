@@ -141,6 +141,13 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		});
 	}
 
+	/*set_value(fieldname, value) {
+		const field = this.get_field(fieldname);
+		if (field) {
+			field.set_value(value);
+		}
+	}*/
+
 	refresh() {
 		super.refresh(this.doc);
 
