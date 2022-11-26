@@ -15,6 +15,7 @@
   "show_in_filter",
   "hidden",
   "extra_field",
+  "collapsible",
   "column_break_4",
   "options",
   "max_length",
@@ -137,11 +138,17 @@
    "fieldname": "fetch_if_empty",
    "fieldtype": "Check",
    "label": "Fetch If Empty"
+  },
+  {
+   "default": "0",
+   "fieldname": "collapsible",
+   "fieldtype": "Check",
+   "label": "Collapsible"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2022-09-24 06:51:22.510055",
+ "modified": "2022-11-25 16:02:05.981701",
  "modified_by": "Administrator",
  "module": "Frappe Helper",
  "name": "Desk Form Field",

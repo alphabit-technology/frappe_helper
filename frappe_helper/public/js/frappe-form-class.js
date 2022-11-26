@@ -36,11 +36,14 @@ class FrappeForm extends frappe.ui.FieldGroup {
 
  	async make() {
 		const setup_add_fetch = (df_fetch_from, df_fetch_to, parent=null) => {
-			df_fetch_from.onchange = (e) => {
-				if ((['Data', 'Read Only', 'Text', 'Small Text', 'Currency', 'Check',
-					'Text Editor', 'Code', 'Link', 'Float', 'Int', 'Date', 'Select'].includes(df_fetch_to.fieldtype) || df_fetch_to.read_only == 1)) {
+			df_fetch_from.listeners ??= {};
+			df_fetch_from.listeners.change = [];
 
-					if(parent) {
+			df_fetch_from.listeners.change.push((e) => {
+				if ((['Data', 'Read Only', 'Text', 'Small Text', 'Currency', 'Check',
+					'Text Editor', 'Code', 'Link', 'Float', 'Int', 'Date', 'Select'].includes(df_fetch_to.fieldtype) || [true, 1, "true", "1"].includes(df_fetch_to.read_only))) {
+
+					if (parent) {
 						const table_input = this.get_field(parent.fieldname).grid;
 						const data = table_input.data;
 
@@ -54,11 +57,16 @@ class FrappeForm extends frappe.ui.FieldGroup {
 					} else {
 						const link_fetch = this.get_field(df_fetch_from.fieldname);
 						const target_fetch_input = this.get_field(df_fetch_to.fieldname);
-
 						this.fetch_link(link_fetch, target_fetch_input);
 					}
 				}
-			}
+			});
+
+			df_fetch_from.onchange = (e) => {
+				df_fetch_from.listeners.change.forEach((listener) => {
+					listener(e);
+				});
+			};
 		}
 
 		return new Promise(resolve => {
@@ -141,13 +149,6 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		});
 	}
 
-	/*set_value(fieldname, value) {
-		const field = this.get_field(fieldname);
-		if (field) {
-			field.set_value(value);
-		}
-	}*/
-
 	refresh() {
 		super.refresh(this.doc);
 
@@ -211,13 +212,16 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		return this.fields_dict;
 	}
 
-	on(fieldname, fn) {
-		const field = this.get_field(fieldname);
-		const $input = this.get_input(fieldname);
-		
-		$input.on('change', (event) => {
-			return fn(field, field.get_value(), event);
-		});
+	on(fieldname, event, fn) {
+		this.fields_dict[fieldname].df.listeners ??= {};
+		this.fields_dict[fieldname].df.listeners[event] ??= [];
+		this.fields_dict[fieldname].df.listeners[event].push(fn);
+
+		this.fields_dict[fieldname].df[`on${event}`] = () => {
+			this.fields_dict[fieldname].df.listeners[event].forEach(fn => {
+				fn();
+			});
+		}
 	}
 
 	save(on_save = null) {
