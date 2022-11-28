@@ -156,6 +156,11 @@ class DeskForm extends FrappeForm {
 		this.refresh();
 		this.customize();
 		this.reloading = false;
+		
+
+		if(this.on_reload && typeof this.on_reload === "function"){
+			this.on_reload();
+		}
 		return this;
 	}
 

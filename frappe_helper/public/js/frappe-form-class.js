@@ -29,8 +29,6 @@ class FrappeForm extends frappe.ui.FieldGroup {
 
 		this.fields = this.desk_form.desk_form_fields;
 		
-
-		//new FrappeFormTest(this.doctype, this.desk_form, this.body, false, null, this.doc);
 		await this.make();
 	}
 
@@ -40,25 +38,36 @@ class FrappeForm extends frappe.ui.FieldGroup {
 			df_fetch_from.listeners.change = [];
 
 			df_fetch_from.listeners.change.push((e) => {
-				if ((['Data', 'Read Only', 'Text', 'Small Text', 'Currency', 'Check',
-					'Text Editor', 'Code', 'Link', 'Float', 'Int', 'Date', 'Select'].includes(df_fetch_to.fieldtype) || [true, 1, "true", "1"].includes(df_fetch_to.read_only))) {
+				
+				if (parent) {
+					const table_input = this.get_field(parent.fieldname).grid;
+					const data = table_input.data;
 
-					if (parent) {
-						const table_input = this.get_field(parent.fieldname).grid;
-						const data = table_input.data;
+					data.forEach((row, index) => {
+						const row_input = table_input.get_row(index);
+						const link_fetch = row_input.columns[df_fetch_from.fieldname].field;
 
-						data.forEach((row, index) => {
-							const row_input = table_input.get_row(index);
-							const link_fetch = row_input.columns[df_fetch_from.fieldname].field;
-							const target_fetch_input = row_input.columns[df_fetch_to.fieldname].field;
+						const target_fetch_inputs = Object.entries(df_fetch_to).map(([key, df_fetch_to]) => {
+							return row_input.columns[df_fetch_to.fieldname].field;
+						}).reduce((acc, cur) => {
+							acc[cur.df.fieldname] = cur;
+							return acc;
+						}, {});
 
-							this.fetch_link(link_fetch, target_fetch_input);
-						});
-					} else {
-						const link_fetch = this.get_field(df_fetch_from.fieldname);
-						const target_fetch_input = this.get_field(df_fetch_to.fieldname);
-						this.fetch_link(link_fetch, target_fetch_input);
-					}
+						this.fetch_link(link_fetch, target_fetch_inputs);
+					});
+				} else {
+					
+					const link_fetch = this.get_field(df_fetch_from.fieldname);
+
+					const target_fetch_inputs = Object.entries(df_fetch_to).map(([key, df_fetch_to]) => {
+						return this.get_field(df_fetch_to.fieldname);
+					}).reduce((acc, cur) => {
+						acc[cur.df.fieldname] = cur;
+						return acc;
+					}, {});
+
+					this.fetch_link(link_fetch, target_fetch_inputs);
 				}
 			});
 
@@ -70,11 +79,32 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		}
 
 		return new Promise(resolve => {
-			this.desk_form.desk_form_fields.forEach(df => {
-				if (df.fetch_from) {
-					setup_add_fetch(this.desk_form.desk_form_fields.find(field => field.fieldname === df.fetch_from.split(".")[0]) || {}, df);
-				}
+			const fetches = {};
 
+			const setup_fetch = (fields, df, parent=null) => {
+				if (!df.fetch_from) return;
+
+				const fetch_from = fields.find(field => field.fieldname === df.fetch_from.split(".")[0]) || {};
+
+				if (([
+					'Data', 'Read Only', 'Text', 'Small Text', 'Currency', 'Check',
+					'Text Editor', 'Code', 'Link', 'Float', 'Int', 'Date', 'Select'
+				].includes(fetch_from.fieldtype) || [true, 1, "true", "1"].includes(fetch_from.read_only))) {
+
+					const fetch_from_field = fetch_from.fieldname;
+					const fetch_to = df.fieldname;
+
+					fetches[fetch_from_field] ??= {};
+					fetches[fetch_from_field].fetch_from = fetch_from;
+					fetches[fetch_from_field].fetch_to ??= [];
+					fetches[fetch_from_field].fetch_to[fetch_to] = df
+					fetches[fetch_from_field].parent = null;
+				}
+			}
+
+			this.desk_form.desk_form_fields.forEach(df => {
+				setup_fetch(this.desk_form.desk_form_fields, df);
+				
 				if (df.fieldtype === 'Table') {
 					df.get_data = () => {
 						return this.doc ? this.doc[df.fieldname] : [];
@@ -85,13 +115,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 					}
 
 					(df.fields || []).forEach(f => {
-						if(f.fetch_from){
-							setup_add_fetch(
-								df.fields.find(field => field.fieldname === f.fetch_from.split(".")[0]) || {},
-								f,
-								df
-							);
-						}
+						setup_fetch(df.fields, f, df);
 						if (f.fieldname === 'name') f.hidden = 1;
 					});
 
@@ -110,6 +134,10 @@ class FrappeForm extends frappe.ui.FieldGroup {
 				delete df.doctype;
 			});
 
+			Object.values(fetches).forEach(fetch => {
+				setup_add_fetch(fetch.fetch_from, fetch.fetch_to, fetch.parent);
+			});
+
 			super.make();
 
 			setTimeout(() => {
@@ -120,31 +148,30 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		});
 	}
 
-	fetch_link(link_fetch, target_input) {
-		if (!target_input) return;
 
-		const doctype = link_fetch.df.options;
-		const from_col = target_input.df.fetch_from.split('.')[1];
-		const doc_name = link_fetch.get_value();
+	fetch_link(link_fetch, fetches_to={}) {
+		if (Object.keys(fetches_to).length === 0) return;
 		
-		if(link_fetch.last_value === doc_name) return;
+		const doctype = link_fetch.df.options;
+		const from_cols = Object.values(fetches_to).map((fetch_to_df) => fetch_to_df.df.fetch_from.split('.')[1]);
+		const doc_name = link_fetch.get_value();
+
+		//if (link_fetch.last_value === doc_name) return;
 		link_fetch.last_value = doc_name;
 
+		
 		frappe.call({
 			method: 'frappe.desk.form.utils.validate_link',
 			type: "GET",
 			args: {
 				'value': doc_name,
 				'options': doctype,
-				'fetch': from_col
+				'fetch': from_cols.join(",")
 			},
 			no_spinner: true,
 			callback: (r) => {
-				if (r.message == 'Ok') {
-					if (r.fetch_values) {
-						target_input.set_value(r.fetch_values[0]);
-					}
-				}
+				const fetch_values = r.fetch_values || [];
+				Object.values(fetches_to).map((fetch_to_df, index) => fetch_to_df.set_value(r.message == 'Ok' ? fetch_values[index] : ''));
 			}
 		});
 	}
@@ -157,7 +184,6 @@ class FrappeForm extends frappe.ui.FieldGroup {
 	}
 
 	refresh_fields(){
-
 		this.desk_form.desk_form_fields.forEach(df => {
 			if (df.read_only) {
 				df.doctype = null;
@@ -213,6 +239,11 @@ class FrappeForm extends frappe.ui.FieldGroup {
 	}
 
 	on(fieldname, event, fn) {
+		if(Array.isArray(fieldname)){
+			fieldname.forEach(f => this.on(f, event, fn));
+			return;
+		}
+		
 		this.fields_dict[fieldname].df.listeners ??= {};
 		this.fields_dict[fieldname].df.listeners[event] ??= [];
 		this.fields_dict[fieldname].df.listeners[event].push(fn);
@@ -222,6 +253,10 @@ class FrappeForm extends frappe.ui.FieldGroup {
 				fn();
 			});
 		}
+	}
+
+	trigger(fieldname, event) {
+		this.fields_dict[fieldname].df[`on${event}`]();
 	}
 
 	save(on_save = null) {

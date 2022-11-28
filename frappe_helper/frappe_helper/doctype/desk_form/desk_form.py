@@ -59,6 +59,7 @@ class DeskForm(Document):
 	def validate(self):
 		#super(DeskForm, self).validate()
 
+
 		if not self.module:
 			self.module = frappe.db.get_value('DocType', self.doc_type, 'module')
 
