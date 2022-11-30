@@ -32,13 +32,20 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		await this.make();
 	}
 
+	initialize_fetches() {
+		this.desk_form.desk_form_fields.forEach(df => {
+			if (df.fetch_from) {
+				this.trigger(df.fetch_from.split(".")[0] , "change");
+			} 
+		});
+	}
+
  	async make() {
 		const setup_add_fetch = (df_fetch_from, df_fetch_to, parent=null) => {
 			df_fetch_from.listeners ??= {};
 			df_fetch_from.listeners.change = [];
 
 			df_fetch_from.listeners.change.push((e) => {
-				
 				if (parent) {
 					const table_input = this.get_field(parent.fieldname).grid;
 					const data = table_input.data;
@@ -57,7 +64,6 @@ class FrappeForm extends frappe.ui.FieldGroup {
 						this.fetch_link(link_fetch, target_fetch_inputs);
 					});
 				} else {
-					
 					const link_fetch = this.get_field(df_fetch_from.fieldname);
 
 					const target_fetch_inputs = Object.entries(df_fetch_to).map(([key, df_fetch_to]) => {
@@ -98,7 +104,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 					fetches[fetch_from_field].fetch_from = fetch_from;
 					fetches[fetch_from_field].fetch_to ??= [];
 					fetches[fetch_from_field].fetch_to[fetch_to] = df
-					fetches[fetch_from_field].parent = null;
+					fetches[fetch_from_field].parent = parent;
 				}
 			}
 
@@ -140,9 +146,10 @@ class FrappeForm extends frappe.ui.FieldGroup {
 
 			super.make();
 
-			setTimeout(() => {
+			//setTimeout(() => {
 				this.after_load && this.after_load(this);
-			}, 500);
+				this.initialize_fetches();
+			//}, 100);
 			
 			resolve();
 		});
@@ -159,7 +166,6 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		//if (link_fetch.last_value === doc_name) return;
 		link_fetch.last_value = doc_name;
 
-		
 		frappe.call({
 			method: 'frappe.desk.form.utils.validate_link',
 			type: "GET",

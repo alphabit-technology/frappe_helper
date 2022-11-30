@@ -146,6 +146,7 @@ class DeskForm extends FrappeForm {
 	load() {
 		this.before_load && this.before_load();
 		super.initialize();
+		this.initialize_fetches();
 	}
 
 	async reload(doc=null, from_server=false) {
@@ -159,7 +160,9 @@ class DeskForm extends FrappeForm {
 		
 
 		if(this.on_reload && typeof this.on_reload === "function"){
-			this.on_reload();
+			setTimeout(() => {
+				this.on_reload();
+			}, 100);
 		}
 		return this;
 	}
