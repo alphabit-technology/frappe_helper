@@ -55,7 +55,7 @@ class JSHtml {
     set_obj() {
         if (this.obj != null) return;
         setTimeout(() => {
-            this.#obj = document.querySelector(`${this.tag}[${this.identifier}='${this.identifier}']`);
+            this.#obj = this.from_html ? this.from_html : document.querySelector(`${this.tag}[${this.identifier}='${this.identifier}']`);
             setTimeout(() => {
                 if (this.obj != null) this.#obj.removeAttribute(this.identifier);
             }, 0);

@@ -233,6 +233,20 @@ class FrappeForm extends frappe.ui.FieldGroup {
 	}
 
 	set_field_property(field_name, property, value) {
+		if(Array.isArray(field_name)){
+			field_name.forEach(field => {
+				this.set_field_property(field, property, value);
+			});
+			return;
+		}
+
+		if(typeof property === 'object'){
+			Object.keys(property).forEach(key => {
+				this.set_field_property(field_name, key, property[key]);
+			});
+			return;
+		}
+
 		const field = this.get_field(field_name);
 		field.doctype = field.df.doctype;
 		field.docname = field.df.docname;
@@ -249,20 +263,48 @@ class FrappeForm extends frappe.ui.FieldGroup {
 			fieldname.forEach(f => this.on(f, event, fn));
 			return;
 		}
-		
-		this.fields_dict[fieldname].df.listeners ??= {};
-		this.fields_dict[fieldname].df.listeners[event] ??= [];
-		this.fields_dict[fieldname].df.listeners[event].push(fn);
 
-		this.fields_dict[fieldname].df[`on${event}`] = () => {
-			this.fields_dict[fieldname].df.listeners[event].forEach(fn => {
-				fn();
-			});
+		const field = this.get_field(fieldname);
+
+		if(field && field.df){
+			const df = field.df;
+			df.listeners ??= {};
+			df.listeners[event] ??= [];
+			df.listeners[event].push(fn);
+
+			df[`on${event}`] = () => {
+				df.listeners[event].forEach(fn => {
+					fn(this.get_value(fieldname));
+				});
+			}
 		}
 	}
 
 	trigger(fieldname, event) {
-		this.fields_dict[fieldname].df[`on${event}`]();
+		if(Array.isArray(fieldname)){
+			fieldname.forEach(f => this.trigger(f, event));
+			return;
+		}
+		const field = this.get_field(fieldname);
+
+		field && field.df && field.df[`on${event}`](this.get_value(fieldname));
+	}
+
+	execute_event(fieldname, event) {
+		const field = this.get_field(fieldname);
+
+		if (field && field.df) {
+			const df = field.df;
+			df.listeners ??= {};
+			df.listeners[event] ??= [];
+			df.listeners[event].push(fn);
+
+			df[`on${event}`] = () => {
+				df.listeners[event].forEach(fn => {
+					fn(this.get_value(fieldname));
+				});
+			}
+		}
 	}
 
 	save(on_save = null) {
