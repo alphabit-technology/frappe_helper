@@ -167,7 +167,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		link_fetch.last_value = doc_name;
 
 		frappe.call({
-			method: 'frappe.desk.form.utils.validate_link',
+			method: 'frappe_helper.api.validate_link',
 			type: "GET",
 			args: {
 				'value': doc_name,
