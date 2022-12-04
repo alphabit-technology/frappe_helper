@@ -146,10 +146,10 @@ class FrappeForm extends frappe.ui.FieldGroup {
 
 			super.make();
 
-			//setTimeout(() => {
+			setTimeout(() => {
 				this.after_load && this.after_load(this);
 				this.initialize_fetches();
-			//}, 100);
+			}, 200);
 			
 			resolve();
 		});
@@ -338,7 +338,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 				},
 				freeze: true,
 				btn: this.buttons[this.button_label],
-				success: (data) => {
+				callback: (data) => {
 					if (!data.exc) {
 						this.doc_name = data.message.name;
 
