@@ -307,54 +307,59 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		}
 	}
 
-	save(on_save = null) {
-		if (this.validate && !this.validate()) {
-			frappe.throw(__("Couldn't save, please check the data you have entered"), __("Validation Error"));
-		}
-
+	save(options) {
 		// validation hack: get_values will check for missing data
-		let doc_values = super.get_values(this.allow_incomplete);
-
-		if (!doc_values) return;
-
-		if (window.saving) return;
-
-		Object.assign(this.doc, doc_values);
-		this.doc.doctype = this.doctype;
-
-		// Save
-		window.saving = true;
-		frappe.form_dirty = false;
-
-		frappe.call({
-			type: "POST",
-			method: this.base_url + 'accept',
-			args: {
-				desk_form: this.form_name,
-				data: this.doc,
-				doc_name: this.doc_name,
-			},
-			freeze: true,
-			btn: this.buttons[this.button_label],
-			callback: (data) => {
-				if (!data.exc) {
-					this.doc_name = data.message.name;
-
-					if (typeof this.call_back != "undefined") {
-						this.call_back(this);
-					}
-
-					if (on_save) on_save();
-				} else {
-					frappe.msgprint(__('There were errors. Please report this.'));
-				}
-			},
-			always: function (r) {
-				window.saving = false;
+		return new Promise(resolve => {
+			const doc_values = super.get_values(this.allow_incomplete);
+			
+			if (!doc_values && options.error){
+				options.error(false);
+				return;
 			}
+
+			if (window.saving && options.error){
+				options.error(__("Please wait for the other operation to complete"));
+				return;
+			}
+
+			Object.assign(this.doc, doc_values);
+			this.doc.doctype = this.doctype;
+
+			window.saving = true;
+			frappe.form_dirty = false;
+
+			frappe.call({
+				type: "POST",
+				method: this.base_url + 'accept',
+				args: {
+					desk_form: this.form_name,
+					data: this.doc,
+					doc_name: this.doc_name,
+				},
+				freeze: true,
+				btn: this.buttons[this.button_label],
+				success: (data) => {
+					if (!data.exc) {
+						this.doc_name = data.message.name;
+
+						this.call_back && this.call_back(data);
+						this.on_save && this.on_save(data);
+						options.success && options.success(data);
+					} else {
+						options.error && options.error(__('There were errors. Please report this.'));
+					}
+				},
+				always: function (r) {
+					options.always && options.always(r);
+					window.saving = false;
+				},
+				error: function (r) {
+					options.error && options.error(__('There were errors. Please report this.'));
+				},
+			});
+			
+			return true;
 		});
-		
-		return true;
 	}
 
 	refresh_dependency() {

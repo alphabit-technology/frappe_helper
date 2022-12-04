@@ -10,12 +10,18 @@ class FrappeHelperApi {
             method: "frappe_helper.api.call",
             args: {model: options.model, name: options.name, method: options.method, args: options.args},
             always: function (r) {
-                if(typeof options.always != "undefined") options.always(r);
+                options.always && options.always(r);
             },
             callback: function (r) {
-                if(typeof options.callback != "undefined") options.callback(r);
+                options.callback && options.callback(r);
             },
-            freeze: (typeof options.freeze !== "undefined" ? false : options.freeze)
+            success: function (r) {
+                options.success && options.success(r);
+            },
+            error: function (r) {
+                options.error && options.error(r);
+            },
+            freeze: !!options.freeze
         });
     }
 }
