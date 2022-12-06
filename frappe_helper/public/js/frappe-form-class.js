@@ -307,18 +307,18 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		}
 	}
 
-	save(options) {
+	save(options={}) {
 		// validation hack: get_values will check for missing data
 		return new Promise(resolve => {
 			const doc_values = super.get_values(this.allow_incomplete);
 			
-			if (!doc_values && options.error){
-				options.error(false);
+			if (!doc_values){
+				options.error && options.error(false);
 				return;
 			}
 
-			if (window.saving && options.error){
-				options.error(__("Please wait for the other operation to complete"));
+			if (window.saving){
+				options.error && options.error(__("Please wait for the other operation to complete"));
 				return;
 			}
 
@@ -342,18 +342,19 @@ class FrappeForm extends frappe.ui.FieldGroup {
 					if (!data.exc) {
 						this.doc_name = data.message.name;
 
-						this.call_back && this.call_back(data);
+						this.call_back && this.call_back(this);
 						this.on_save && this.on_save(data);
 						options.success && options.success(data);
 					} else {
 						options.error && options.error(__('There were errors. Please report this.'));
 					}
 				},
-				always: function (r) {
+				always: (r) => {
 					options.always && options.always(r);
 					window.saving = false;
 				},
 				error: function (r) {
+					options.always && options.always(r);
 					options.error && options.error(__('There were errors. Please report this.'));
 				},
 			});
