@@ -54,10 +54,10 @@ class FrappeForm extends frappe.ui.FieldGroup {
 						const row_input = table_input.get_row(index);
 						const link_fetch = row_input.columns[df_fetch_from.fieldname].field;
 
-						const target_fetch_inputs = Object.entries(df_fetch_to).map(([key, df_fetch_to]) => {
-							return row_input.columns[df_fetch_to.fieldname].field;
+						const target_fetch_inputs = Object.entries(df_fetch_to).map(([key, _df_fetch_to]) => {
+							return row_input.columns[_df_fetch_to.fieldname].field
 						}).reduce((acc, cur) => {
-							acc[cur.df.fieldname] = cur;
+							if(cur) acc[cur.df.fieldname] = cur;
 							return acc;
 						}, {});
 
@@ -69,7 +69,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 					const target_fetch_inputs = Object.entries(df_fetch_to).map(([key, df_fetch_to]) => {
 						return this.get_field(df_fetch_to.fieldname);
 					}).reduce((acc, cur) => {
-						acc[cur.df.fieldname] = cur;
+						if(cur) acc[cur.df.fieldname] = cur;
 						return acc;
 					}, {});
 

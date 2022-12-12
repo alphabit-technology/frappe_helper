@@ -10,6 +10,10 @@ class DeskModal {
 		Object.assign(this, props);
 	}
 
+	remove(){
+		this.modal && this.modal.$wrapper.remove();
+	}
+
 	construct(){
 		this.modal = new frappe.ui.Dialog({
 			title: this.title,

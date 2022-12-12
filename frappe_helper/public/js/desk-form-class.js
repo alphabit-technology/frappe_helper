@@ -9,7 +9,11 @@ class DeskForm extends FrappeForm {
 
 		this.in_modal = !this.location;
 		if (this.form_name) this.initialize();
-	}  
+	}
+
+	remove(){
+		this._wrapper && this._wrapper.$wrapper.remove();
+	}
 
 	get parent() {
 		return this.body;
@@ -116,29 +120,38 @@ class DeskForm extends FrappeForm {
 	customize() {
 		this.body.addClass('desk-form');
 
-		Object.entries(this.field_properties || {}).forEach(([field, props]) => {
-			const child_field = field.split(".");
+		Object.entries(this.field_properties || {}).forEach(([f, props]) => {
+			const child_field = f.split(".");
+			let field, grid;
 
 			if (child_field.length > 1) {
-				field = this.get_field(child_field[0]).grid.get_field(child_field[1]);
+				grid = this.get_field(child_field[0]).grid;
+				field = grid.get_field(child_field[1]);
 			} else {
 				field = this.get_field(child_field[0]);
 			}
-
+			
 			Object.entries(props).forEach(([prop, value]) => {
 				if(field){
+					field.df ??= {};
+
 					if (prop === "get_query") {
 						field.get_query = value;
+						return;
 					} else if (prop === "value") {
 						field.set_value(value);
+						return;
 					}
 
-					if(field.df){
-						if(field.df && prop === "on_change"){
-							field.df.on_change = value;
+					if(prop === "on_change"){
+						field.df.on_change = value;
+					}else{
+						field.df[prop] = value;
+						/*if(grid){
+							field.df[prop] = value;
 						}else{
-							this.set_field_property(field.df.fieldname, prop, value);
-						}
+							self.set_field_property(field.df.fieldname, prop, value);
+						}*/
 					}
 				}
 			});
