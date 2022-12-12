@@ -13,7 +13,7 @@ class DeskModal {
 	construct(){
 		this.modal = new frappe.ui.Dialog({
 			title: this.title,
-			primary_action_label: __("Save"),
+			primary_action_label: __("Save")
 		});
 
 		this.show();

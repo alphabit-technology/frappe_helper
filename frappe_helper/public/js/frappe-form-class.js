@@ -258,6 +258,10 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		return this.fields_dict;
 	}
 
+	get_section(section_name) {
+		return this.get_field(section_name);
+	}
+
 	on(fieldname, event, fn) {
 		if(Array.isArray(fieldname)){
 			fieldname.forEach(f => this.on(f, event, fn));
@@ -274,7 +278,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 
 			df[`on${event}`] = () => {
 				df.listeners[event].forEach(fn => {
-					fn(this.get_value(fieldname));
+					fn(field, fieldname);
 				});
 			}
 		}
@@ -286,8 +290,9 @@ class FrappeForm extends frappe.ui.FieldGroup {
 			return;
 		}
 		const field = this.get_field(fieldname);
+		const e = field && field.df[`on${event}`]
 
-		field && field.df && field.df[`on${event}`](this.get_value(fieldname));
+		e && typeof e === 'function' && e(this.get_value(fieldname));
 	}
 
 	execute_event(fieldname, event) {
@@ -307,10 +312,10 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		}
 	}
 
-	save(options={}) {
+	save(options={}, force=false) {
 		// validation hack: get_values will check for missing data
 		return new Promise(resolve => {
-			const doc_values = super.get_values(this.allow_incomplete);
+			const doc_values = super.get_values(force);
 			
 			if (!doc_values){
 				options.error && options.error(false);
@@ -322,7 +327,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 				return;
 			}
 
-			Object.assign(this.doc, doc_values);
+			Object.assign(this.doc, doc_values || {});
 			this.doc.doctype = this.doctype;
 
 			window.saving = true;

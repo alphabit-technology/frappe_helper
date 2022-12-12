@@ -65,6 +65,8 @@ class DeskForm extends FrappeForm {
 			}
 		}
 
+		this.in_modal && this._wrapper && this._wrapper.wrapper.classList.add('modal-lg');
+
 		this.body.show();
 		this.show();
 	}
