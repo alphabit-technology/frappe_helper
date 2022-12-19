@@ -110,7 +110,17 @@ class FrappeForm extends frappe.ui.FieldGroup {
 
 			this.desk_form.desk_form_fields.forEach(df => {
 				setup_fetch(this.desk_form.desk_form_fields, df);
-				
+
+				const get_field_from_field_properties = (fieldname, parent=null) => {
+					if(this.field_properties){
+						const field_props = this.field_properties[(parent ? parent + "." : "") + fieldname];
+
+						return field_props || {};
+					}
+
+					return {}
+				}
+
 				if (df.fieldtype === 'Table') {
 					df.get_data = () => {
 						return this.doc ? this.doc[df.fieldname] : [];
@@ -123,11 +133,15 @@ class FrappeForm extends frappe.ui.FieldGroup {
 					(df.fields || []).forEach(f => {
 						setup_fetch(df.fields, f, df);
 						if (f.fieldname === 'name') f.hidden = 1;
+
+						Object.assign(f, get_field_from_field_properties(f.fieldname, df.fieldname))
 					});
 
 					df.options = null;
 
 				}else{
+					Object.assign(df, get_field_from_field_properties(df.fieldname));
+
 					if(df.read_only){
 						df.doctype = null;
 						df.docname = null;
@@ -347,7 +361,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 					if (!data.exc) {
 						this.doc_name = data.message.name;
 
-						this.call_back && this.call_back(this);
+						this.callback && this.callback(this);
 						this.on_save && this.on_save(data);
 						options.success && options.success(data);
 					} else {

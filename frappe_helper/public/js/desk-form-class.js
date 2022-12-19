@@ -119,7 +119,7 @@ class DeskForm extends FrappeForm {
 
 	customize() {
 		this.body.addClass('desk-form');
-
+		return;
 		Object.entries(this.field_properties || {}).forEach(([f, props]) => {
 			const child_field = f.split(".");
 			let field, grid;
@@ -144,7 +144,9 @@ class DeskForm extends FrappeForm {
 					}
 
 					if(prop === "on_change"){
-						field.df.on_change = value;
+						field.df.onchange = () => {
+							value();
+						}
 					}else{
 						field.df[prop] = value;
 						/*if(grid){
@@ -155,6 +157,8 @@ class DeskForm extends FrappeForm {
 					}
 				}
 			});
+
+
 		});
 	}
 

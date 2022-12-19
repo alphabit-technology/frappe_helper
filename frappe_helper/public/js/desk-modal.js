@@ -79,8 +79,8 @@ class DeskModal {
 		}
 
 		if(typeof this.from_server == "undefined") {
-			if(this.call_back){
-				this.call_back();
+			if(this.callback){
+				this.callback(this);
 			}
 		}else{
 			this.load_data();
@@ -159,8 +159,8 @@ class DeskModal {
 				always: (r) => {
 					this.container.empty().append(r.message);
 					this.stop_loading();
-					if(this.call_back){
-						this.call_back();
+					if(this.callback){
+						this.callback(this);
 					}
 				},
 			});
