@@ -133,8 +133,10 @@ class FrappeForm extends frappe.ui.FieldGroup {
 					(df.fields || []).forEach((f, index) => {
 						
 						if (f.fieldname === 'name'){
+							//f.value = Date.now().toString(36) + Math.random().toString(36).substring(2);
+
 							//const x = myArray.splice(index, 1);
-							df.fields.splice(index, 1);
+							//df.fields.splice(index, 1);
 						}// f.read_only = 1;
 						else{
 							setup_fetch(df.fields, f, df);
