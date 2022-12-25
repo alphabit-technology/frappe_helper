@@ -130,11 +130,16 @@ class FrappeForm extends frappe.ui.FieldGroup {
 						df.fields = this.data[df.fieldname];
 					}
 
-					(df.fields || []).forEach(f => {
-						setup_fetch(df.fields, f, df);
-						if (f.fieldname === 'name') f.read_only = 1;
-
-						Object.assign(f, get_field_from_field_properties(f.fieldname, df.fieldname))
+					(df.fields || []).forEach((f, index) => {
+						
+						if (f.fieldname === 'name'){
+							//const x = myArray.splice(index, 1);
+							df.fields.splice(index, 1);
+						}// f.read_only = 1;
+						else{
+							setup_fetch(df.fields, f, df);
+							Object.assign(f, get_field_from_field_properties(f.fieldname, df.fieldname))
+						}
 					});
 
 					df.options = null;
