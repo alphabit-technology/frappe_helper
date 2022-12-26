@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "field:route",
  "creation": "2021-07-15 19:11:24.656019",
  "doctype": "DocType",
@@ -251,7 +252,7 @@
  "icon": "icon-edit",
  "is_published_field": "published",
  "links": [],
- "modified": "2022-09-13 17:06:33.102087",
+ "modified": "2022-12-23 15:52:04.760315",
  "modified_by": "Administrator",
  "module": "Frappe Helper",
  "name": "Desk Form",
