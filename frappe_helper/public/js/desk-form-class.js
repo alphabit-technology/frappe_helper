@@ -205,6 +205,36 @@ class DeskForm extends FrappeForm {
 		return this;
 	}
 
+	hide_field(fieldname) {
+		if(Array.isArray(fieldname)){
+			fieldname.forEach(field => {
+				this.hide_field(field);
+			});
+		}else{
+			this.set_field_display(fieldname, true);
+		}
+	}
+
+	show_field(fieldname) {
+		if(Array.isArray(fieldname)){
+			fieldname.forEach(field => {
+				this.show_field(field);
+			});
+		}else{
+			this.set_field_display(fieldname, false);
+		}
+	}
+
+	set_field_display(fieldname, hide) {
+		const field = this.get_field(fieldname);
+		console.log(["set_field_display", fieldname, hide, field])
+		if (field) {
+			//field.df.hidden = hide;
+			//field.refresh();
+			field.$wrapper[hide ? 'hide' : 'show']();
+		}
+	}
+
 	toggle() {
 		this.is_hide ? this.show() : this.hide();
 		return this;

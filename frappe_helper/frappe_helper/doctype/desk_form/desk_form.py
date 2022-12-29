@@ -206,7 +206,6 @@ def get_context(context):
 	def load_document(self, context):
 		'''Load document `doc` and `layout` properties for template'''
 		if frappe.form_dict.name or frappe.form_dict.new:
-			context.layout = self.get_layout()
 			context.parents = [{"route": self.route, "label": _(self.title) }]
 
 		if frappe.form_dict.name:
@@ -252,61 +251,6 @@ def get_context(context):
 					style = "\n\n".join([style, custom_css])
 
 				context.style = style
-
-	def get_layout(self):
-		layout = []
-		def add_page(df=None):
-			new_page = {'sections': []}
-			layout.append(new_page)
-			if df and df.fieldtype=='Page Break':
-				new_page.update(df.as_dict())
-
-			return new_page
-
-		def add_section(df=None):
-			new_section = {'columns': []}
-			if layout:
-				layout[-1]['sections'].append(new_section)
-			if df and df.fieldtype=='Section Break':
-				new_section.update(df.as_dict())
-
-			return new_section
-
-		def add_column(df=None):
-			new_col = []
-			if layout:
-				layout[-1]['sections'][-1]['columns'].append(new_col)
-
-			return new_col
-
-		page, section, column = None, None, None
-		for df in self.desk_form_fields:
-
-			# breaks
-			if df.fieldtype=='Page Break':
-				page = add_page(df)
-				section, column = None, None
-
-			if df.fieldtype=='Section Break':
-				section = add_section(df)
-				column = None
-
-			if df.fieldtype=='Column Break':
-				column = add_column(df)
-
-			# input
-			if df.fieldtype not in ('Section Break', 'Column Break', 'Page Break'):
-				if not page:
-					page = add_page()
-					section, column = None, None
-				if not section:
-					section = add_section()
-					column = None
-				if column==None:
-					column = add_column()
-				column.append(df)
-
-		return layout
 
 	def get_parents(self, context):
 		parents = None
@@ -515,24 +459,23 @@ def make_route_string(parameters):
 
 
 @frappe.whitelist(allow_guest=False)
-def get_meta(doctype = None):
-	return frappe.get_doc("DocType", doctype)
-
-
-@frappe.whitelist(allow_guest=False)
 def get_doc(doctype, doc_name=None):
 	name = frappe.db.get_value(doctype, {"name": doc_name}) if doc_name else None
+	
 	if name:
 		doc = frappe.get_doc(doctype, name)
 		doc.new = False
-		return doc
 	else:
 		doc = frappe.new_doc(doctype)
 		if doc_name:
 			doc.set("name", doc_name)
-
 		doc.new = True
-		return doc
+
+	method = getattr(doc, 'onload', None)
+	if callable(method):
+		doc.onload()
+
+	return doc
 
 @frappe.whitelist(allow_guest=False)
 def get_form(form_name=None):
