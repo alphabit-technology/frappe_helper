@@ -173,7 +173,16 @@ class DeskForm extends FrappeForm {
 		this.before_load && this.before_load();
 		this.doc = doc || await this.get_doc(from_server);
 
-		this.refresh();
+		this.fields.map(f => {
+			try{
+				this.set_value(f.fieldname, this.doc[f.fieldname]);
+			}catch(e){
+				console.log(e);
+			}
+		});
+
+		this.refresh_fields();
+		//this.refresh();
 		this.customize();
 		this.reloading = false;
 		
@@ -227,7 +236,6 @@ class DeskForm extends FrappeForm {
 
 	set_field_display(fieldname, hide) {
 		const field = this.get_field(fieldname);
-		console.log(["set_field_display", fieldname, hide, field])
 		if (field) {
 			//field.df.hidden = hide;
 			//field.refresh();

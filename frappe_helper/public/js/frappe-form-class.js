@@ -133,12 +133,10 @@ class FrappeForm extends frappe.ui.FieldGroup {
 					(df.fields || []).forEach((f, index) => {
 						
 						if (f.fieldname === 'name'){
-							f.default = Date.now().toString(36) + Math.random().toString(36).substring(2);
-
 							//const x = myArray.splice(index, 1);
 							//df.fields.splice(index, 1);
-						}// f.read_only = 1;
-						else{
+							// f.read_only = 1;
+						}else{
 							setup_fetch(df.fields, f, df);
 							Object.assign(f, get_field_from_field_properties(f.fieldname, df.fieldname))
 						}
@@ -336,56 +334,58 @@ class FrappeForm extends frappe.ui.FieldGroup {
 	save(options={}, force=false) {
 		// validation hack: get_values will check for missing data
 		return new Promise(resolve => {
-			const doc_values = super.get_values(force);
-			
-			if (!doc_values){
-				options.error && options.error(false);
-				return;
-			}
+			setTimeout(() => {
+				const doc_values = super.get_values(force);
+				
+				if (!doc_values){
+					options.error && options.error(false);
+					return;
+				}
 
-			if (window.saving){
-				options.error && options.error(__("Please wait for the other operation to complete"));
-				return;
-			}
+				if (window.saving){
+					options.error && options.error(__("Please wait for the other operation to complete"));
+					return;
+				}
 
-			Object.assign(this.doc, doc_values || {});
-			this.doc.doctype = this.doctype;
+				Object.assign(this.doc, doc_values || {});
+				this.doc.doctype = this.doctype;
 
-			window.saving = true;
-			frappe.form_dirty = false;
+				window.saving = true;
+				frappe.form_dirty = false;
 
-			frappe.call({
-				type: "POST",
-				method: this.base_url + 'accept',
-				args: {
-					desk_form: this.form_name,
-					data: this.doc,
-					doc_name: this.doc_name,
-				},
-				freeze: true,
-				btn: this.buttons[this.button_label],
-				callback: (data) => {
-					if (!data.exc) {
-						this.doc_name = data.message.name;
+				frappe.call({
+					type: "POST",
+					method: this.base_url + 'accept',
+					args: {
+						desk_form: this.form_name,
+						data: this.doc,
+						doc_name: this.doc_name,
+					},
+					freeze: true,
+					btn: this.buttons[this.button_label],
+					callback: (data) => {
+						if (!data.exc) {
+							this.doc_name = data.message.name;
 
-						this.callback && this.callback(this);
-						this.on_save && this.on_save(data);
-						options.success && options.success(data);
-					} else {
+							this.callback && this.callback(this);
+							this.on_save && this.on_save(data);
+							options.success && options.success(data);
+						} else {
+							options.error && options.error(__('There were errors. Please report this.'));
+						}
+
+						options.always && options.always(data);
+					},
+					always: (r) => {
+						options.always && options.always(r);
+						window.saving = false;
+					},
+					error: function (r) {
+						options.always && options.always(r);
 						options.error && options.error(__('There were errors. Please report this.'));
-					}
-				},
-				always: (r) => {
-					options.always && options.always(r);
-					window.saving = false;
-				},
-				error: function (r) {
-					options.always && options.always(r);
-					options.error && options.error(__('There were errors. Please report this.'));
-				},
-			});
-			
-			return true;
+					},
+				});
+			}, 200);
 		});
 	}
 

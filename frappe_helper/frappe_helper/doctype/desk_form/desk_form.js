@@ -77,7 +77,6 @@ frappe.ui.form.on("Desk Form", {
 	},
 
 	title: function(frm) {
-		console.log(["set form title"])
 		if (frm.doc.__islocal) {
 			var page_name = frm.doc.title.toLowerCase().replace(/ /g, "-");
 			frm.set_value("route", page_name);
