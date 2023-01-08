@@ -79,6 +79,7 @@ class DeskForm extends FrappeForm {
 		this.primary_btn.focus();
 		
 		if (this.primary_action) {
+			this.last_data ??= JSON.stringify(this.doc);
 			if (this.last_data != JSON.stringify(this.doc)) {
 				this.last_data = JSON.stringify(this.doc);
 				this.primary_action();
@@ -96,7 +97,9 @@ class DeskForm extends FrappeForm {
 		if (this.has_primary_action && this.in_modal) {
 			const button = this.primary_btn;
 			if(button){
-				button.on('click', () => {
+				button.on('click', (event) => {
+					event.preventDefault();
+					event.stopPropagation();
 					this.execute_primary_action();
 				});
 
@@ -109,57 +112,10 @@ class DeskForm extends FrappeForm {
 		}else{
 			this.footer.hide();
 		}
-
-		/*if (this.close_only_button) {
-			const button = this.get_field("close_only_button");
-
-			button ? button.attr({ "data-keyboard": "false", "data-backdrop": "static", "id": `${this.identifier}` }) : "";
-		}*/
 	}
 
 	customize() {
 		this.body.addClass('desk-form');
-		return;
-		Object.entries(this.field_properties || {}).forEach(([f, props]) => {
-			const child_field = f.split(".");
-			let field, grid;
-
-			if (child_field.length > 1) {
-				grid = this.get_field(child_field[0]).grid;
-				field = grid.get_field(child_field[1]);
-			} else {
-				field = this.get_field(child_field[0]);
-			}
-			
-			Object.entries(props).forEach(([prop, value]) => {
-				if(field){
-					field.df ??= {};
-
-					if (prop === "get_query") {
-						field.get_query = value;
-						return;
-					} else if (prop === "value") {
-						field.set_value(value);
-						return;
-					}
-
-					if(prop === "on_change"){
-						field.df.onchange = () => {
-							value();
-						}
-					}else{
-						field.df[prop] = value;
-						/*if(grid){
-							field.df[prop] = value;
-						}else{
-							self.set_field_property(field.df.fieldname, prop, value);
-						}*/
-					}
-				}
-			});
-
-
-		});
 	}
 
 	load() {
@@ -168,36 +124,38 @@ class DeskForm extends FrappeForm {
 		this.initialize_fetches();
 	}
 
+	set_value(fieldname, value, on_reload=false) {
+		const field = this.get_field(fieldname);
+		if (field) {
+			field.set_value && typeof field.set_value === "function" && field.set_value(value);
+		}
+	}
+
 	async reload(doc=null, from_server=false) {
 		this.reloading = true;
 		this.before_load && this.before_load();
 		this.doc = doc || await this.get_doc(from_server);
 
-		this.fields.map(f => {
-			try{
-				this.set_value(f.fieldname, this.doc[f.fieldname]);
-			}catch(e){
-				console.log(e);
-			}
-		});
+		this.doc = JSON.parse(JSON.stringify(this.doc));
 
-		this.refresh_fields();
-		//this.refresh();
+		this.refresh();
+		
 		this.customize();
 		this.reloading = false;
 		
-
-		if(this.on_reload && typeof this.on_reload === "function"){
-			setTimeout(() => {
+		setTimeout(() => {
+			if(this.on_reload && typeof this.on_reload === "function"){
 				this.on_reload();
-			}, 100);
-		}
+			}
+			this.reloading = false;
+		}, 100);
+		
 		return this;
 	}
 
 	background_reload() {
 		this.get_doc(true).then(doc => {
-			this.doc = doc;
+			this.doc = JSON.parse(JSON.stringify(doc));
 			this.refresh();
 		});
 	}
@@ -223,6 +181,11 @@ class DeskForm extends FrappeForm {
 			this.set_field_display(fieldname, true);
 		}
 	}
+
+	super_container_field(fieldname) {
+		return $(this.get_field(fieldname).$wrapper.parent()[0]).parent()[0]
+	}
+
 
 	show_field(fieldname) {
 		if(Array.isArray(fieldname)){

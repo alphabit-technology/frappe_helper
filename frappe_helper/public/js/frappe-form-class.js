@@ -26,6 +26,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 		this.doctype = this.desk_form.doc_type;
 
 		if (!this.doc && this.doc_name) this.doc = await this.get_doc();
+		this.doc = JSON.parse(JSON.stringify(this.doc || {}));
 
 		this.fields = this.desk_form.desk_form_fields;
 		
@@ -295,7 +296,13 @@ class FrappeForm extends frappe.ui.FieldGroup {
 			df.listeners[event] ??= [];
 			df.listeners[event].push(fn);
 
+			this.listeners ??= {};
+			this.listeners[df.fieldname] ??= {};
+			this.listeners[df.fieldname][event] ??= [];
+			this.listeners[df.fieldname][event].push(fn);
+
 			df[`on${event}`] = () => {
+				if(this.reloading) return;
 				df.listeners[event].forEach(fn => {
 					fn(field, fieldname);
 				});
