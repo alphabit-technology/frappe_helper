@@ -12,7 +12,11 @@ class DeskForm extends FrappeForm {
 	}
 
 	remove(){
-		this._wrapper && this._wrapper.$wrapper.remove();
+		this.$$wrapper.remove();
+	}
+
+	get $$wrapper() {
+		return this.in_modal ? $(this._wrapper.$wrapper) : this._wrapper;
 	}
 
 	get parent() {
@@ -44,12 +48,17 @@ class DeskForm extends FrappeForm {
 	}
 
 	async initialize() {
-		this._wrapper = this.location || new frappe.ui.Dialog({
+		if(this.location){
+			this.location.append(`<div class="desk-form"></div>`);
+			this._wrapper = this.location.find('.desk-form');
+		}else{
+			this._wrapper = new frappe.ui.Dialog({
 				title: this.title,
 				on_hide: () => {
 					close_grid_and_dialog();
 				}
 			});
+		}
 
 		await super.initialize();
 
@@ -115,7 +124,7 @@ class DeskForm extends FrappeForm {
 	}
 
 	customize() {
-		this.body.addClass('desk-form');
+		this.body.addClass('desk-form-body');
 	}
 
 	load() {
