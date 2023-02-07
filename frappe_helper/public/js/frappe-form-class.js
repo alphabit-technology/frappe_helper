@@ -210,12 +210,26 @@ class FrappeForm extends frappe.ui.FieldGroup {
 	}
 
 	refresh_fields(){
+		const listeners = Object.assign({}, this.listeners || {});
+		this.listeners = {};
+
 		this.desk_form.desk_form_fields.forEach(df => {
 			if (df.read_only) {
 				df.doctype = null;
 				df.docname = null;
 
 				this.set_field_property(df.fieldname, "read_only", true);
+			}
+
+			if(listeners[df.fieldname]){
+				this.set_df_property(df.fieldname, "listeners", {});
+
+				Object.entries(listeners[df.fieldname]).forEach(([event, callback]) => {
+					this.set_df_property(df.fieldname, "on"+event, []);
+					callback.forEach(cb => {
+						this.on(df.fieldname, event, cb);
+					});
+				});
 			}
 		});
 	}
@@ -292,6 +306,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 
 		if(field && field.df){
 			const df = field.df;
+
 			df.listeners ??= {};
 			df.listeners[event] ??= [];
 			df.listeners[event].push(fn);
@@ -302,7 +317,7 @@ class FrappeForm extends frappe.ui.FieldGroup {
 			this.listeners[df.fieldname][event].push(fn);
 
 			df[`on${event}`] = () => {
-				if(this.reloading) return;
+				//if(this.reloading) return;
 				df.listeners[event].forEach(fn => {
 					fn(field, fieldname);
 				});

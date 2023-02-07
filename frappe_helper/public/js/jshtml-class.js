@@ -53,7 +53,7 @@ class JSHtml {
     get text() { return this.#text }
 
     set_obj() {
-        if (this.obj != null) return;
+        if (this.obj) return;
         setTimeout(() => {
             this.#obj = this.from_html ? this.from_html : document.querySelector(`${this.tag}[${this.identifier}='${this.identifier}']`);
             setTimeout(() => {
@@ -174,7 +174,7 @@ class JSHtml {
 
     make_dom() {
         //setTimeout(() => {
-            if (typeof this.wrapper == "undefined" || this.wrapper == null) {
+            if (!this.wrapper) {
                 return this.html();
             } else {
                 $(this.wrapper).append(this.html());
