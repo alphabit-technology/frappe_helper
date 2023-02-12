@@ -7,3 +7,11 @@
  .desk-form .grid-insert-row-below {
     display: none !important;
 }
+
+.custom-widget {
+    margin-bottom: 10px;
+}
+
+.custom-widget .widget {
+    padding: 8px;
+}

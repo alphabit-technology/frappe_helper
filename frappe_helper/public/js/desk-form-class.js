@@ -47,6 +47,18 @@ class DeskForm extends FrappeForm {
 		return this.in_modal ? this._wrapper.fields_dict[field_name].$wrapper : null;
 	}
 
+	get_value(fieldname) {
+		if(Array.isArray(fieldname)){
+			const values = [];
+			fieldname.forEach(field => {
+				values.push(this.get_value(field));
+			});
+			return values;
+		}
+
+		return super.get_value(fieldname);
+	}
+
 	async initialize() {
 		if(this.location){
 			this.location.append(`<div class="desk-form"></div>`);
@@ -121,6 +133,8 @@ class DeskForm extends FrappeForm {
 		}else{
 			this.footer.hide();
 		}
+
+		this.make_custom_buttons_wrapper();
 	}
 
 	customize() {
@@ -218,5 +232,50 @@ class DeskForm extends FrappeForm {
 	toggle() {
 		this.is_hide ? this.show() : this.hide();
 		return this;
+	}
+
+	make_custom_buttons_wrapper() {
+		this.body.append(`
+            <div class='widget-group custom-widget'>
+                <div class=" widget-group-body grid-col-2"></div>
+            </div>
+        `)
+	}
+
+	add_action({ name, label, confirm = false, classes="", style="", type="default", icon="" } = {}, action) {
+		this.actions ??= {};
+
+		const wrapper = this.body.find(".custom-widget");
+
+		wrapper.find(".widget-group-body").append(`
+            <a
+                class="widget widget-shadow shortcut-widget-box ${classes} bg-${type}"
+                style="align-items:center;${style};"
+                data-widget-name="${name}"
+            >
+                ${this.#action_content("", label, icon)}
+            </a>
+        `);
+
+		this.actions[name] = frappe.jshtml({
+			from_html: wrapper.find(`[data-widget-name="${name}"]`).get(0),
+			content: this.#action_content("", "{{text}}", icon),
+			text: `${__(label)}`
+		}).on("click", () => {
+			action && action();
+		}, confirm ? DOUBLE_CLICK : null);
+	}
+
+	#action_content(value, template = "", icon = "") {
+		return `
+        <div class="widget-head">
+            <div>
+                <div class="widget-title ellipsis" style="font-size: 1.2em;">
+					<span class="${icon}" style="padding-right: 5px;"></span> ${template} ${value}
+				</div>
+                <div class="widget-subtitle"></div>
+                <div class="widget-control"></div>
+            </div>
+        </div>`
 	}
 }

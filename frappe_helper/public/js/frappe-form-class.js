@@ -44,9 +44,9 @@ class FrappeForm extends frappe.ui.FieldGroup {
  	async make() {
 		const setup_add_fetch = (df_fetch_from, df_fetch_to, parent=null) => {
 			df_fetch_from.listeners ??= {};
-			df_fetch_from.listeners.change = [];
+			df_fetch_from.listeners.change ??= [];
 
-			df_fetch_from.listeners.change.push((e) => {
+			df_fetch_from.listeners.change.push(e => {
 				if (parent) {
 					const table_input = this.get_field(parent.fieldname).grid;
 					const data = table_input.data;
@@ -78,11 +78,13 @@ class FrappeForm extends frappe.ui.FieldGroup {
 				}
 			});
 
-			df_fetch_from.onchange = (e) => {
-				df_fetch_from.listeners.change.forEach((listener) => {
-					listener(e);
+			setTimeout(() => {
+				df_fetch_from.listeners.change.forEach(listener => {
+					this.on(df_fetch_from.fieldname, "change", (e) => {
+						listener(e);
+					});
 				});
-			}
+			}, 0);
 		}
 
 		return new Promise(resolve => {

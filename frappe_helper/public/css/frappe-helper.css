@@ -9,7 +9,7 @@
     opacity: 0.4;
     pointer-events: none !important;
     cursor: not-allowed !important;
-    filter: alpha(opacity=65);
+    filter: alpha(opacity=50);
     -webkit-box-shadow: none;
     box-shadow: none;
     -moz-user-select: none;

@@ -81,7 +81,9 @@ class JSHtml {
     }
 
     toggle_common(base_class, toggle_class) {
-        this.add_class(toggle_class).JQ().siblings(`.${base_class}.${toggle_class}`).removeClass(toggle_class);
+        setTimeout(() => {
+            this.add_class(toggle_class).JQ().siblings(`.${base_class}.${toggle_class}`).removeClass(toggle_class);
+        }, 0);
     }
 
     float(decimals = 2) {
