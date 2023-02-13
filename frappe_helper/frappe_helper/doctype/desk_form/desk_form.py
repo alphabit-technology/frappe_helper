@@ -17,10 +17,7 @@ import frappe
 from frappe import _, scrub
 from frappe.core.doctype.file.file import get_max_file_size, remove_file_by_url
 from frappe.custom.doctype.customize_form.customize_form import docfield_properties
-from frappe.desk.form.meta import get_code_files_via_hooks
 from frappe.modules.utils import export_module_json, get_doc_module
-from frappe.utils import cstr
-from frappe.website.utils import get_comment_list
 from frappe.model.document import Document
 
 
@@ -134,123 +131,6 @@ def get_context(context):
 	# do your desk here
 	pass
 """)
-
-	def get_context(self, context):
-		'''Build context to render the `desk_form.html` template'''
-		self.set_desk_form_module()
-
-		context._login_required = False
-		if self.login_required and frappe.session.user == "Guest":
-			context._login_required = True
-
-		doc, delimeter = make_route_string(frappe.form_dict)
-		context.doc = doc
-		context.delimeter = delimeter
-
-		# check permissions
-		if frappe.session.user == "Guest" and frappe.form_dict.name:
-			frappe.throw(_("You need to be logged in to access this {0}.").format(self.doc_type), frappe.PermissionError)
-
-		if frappe.form_dict.name and not has_desk_form_permission(self.doc_type, frappe.form_dict.name):
-			frappe.throw(_("You don't have the permissions to access this document"), frappe.PermissionError)
-
-		self.reset_field_parent()
-
-		if self.is_standard:
-			self.use_meta_fields()
-
-		if not context._login_required:
-			if self.allow_edit:
-				if self.allow_multiple:
-					if not frappe.form_dict.name and not frappe.form_dict.new:
-						# list data is queried via JS
-						context.is_list = True
-				else:
-					if frappe.session.user != 'Guest' and not frappe.form_dict.name:
-						frappe.form_dict.name = frappe.db.get_value(self.doc_type, {"owner": frappe.session.user}, "name")
-
-					if not frappe.form_dict.name:
-						# only a single doc allowed and no existing doc, hence new
-						frappe.form_dict.new = 1
-
-		# always render new form if login is not required or doesn't allow editing existing ones
-		if not self.login_required or not self.allow_edit:
-			frappe.form_dict.new = 1
-
-		self.load_document(context)
-		context.parents = self.get_parents(context)
-
-		if self.breadcrumbs:
-			context.parents = frappe.safe_eval(self.breadcrumbs, { "_": _ })
-
-		context.has_header = ((frappe.form_dict.name or frappe.form_dict.new)
-			and (frappe.session.user!="Guest" or not self.login_required))
-
-		if context.success_message:
-			context.success_message = frappe.db.escape(context.success_message.replace("\n",
-				"<br>")).strip("'")
-
-		self.add_custom_context_and_script(context)
-		if not context.max_attachment_size:
-			context.max_attachment_size = get_max_file_size() / 1024 / 1024
-
-		context.show_in_grid = self.show_in_grid
-		self.load_translations(context)
-
-	def load_translations(self, context):
-		translated_messages = frappe.translate.get_dict('doctype', self.doc_type)
-		# Sr is not added by default, had to be added manually
-		translated_messages['Sr'] = _('Sr')
-		context.translated_messages = frappe.as_json(translated_messages)
-
-	def load_document(self, context):
-		'''Load document `doc` and `layout` properties for template'''
-		if frappe.form_dict.name or frappe.form_dict.new:
-			context.parents = [{"route": self.route, "label": _(self.title) }]
-
-		if frappe.form_dict.name:
-			context.doc = frappe.get_doc(self.doc_type, frappe.form_dict.name)
-			context.title = context.doc.get(context.doc.meta.get_title_field())
-			context.doc.add_seen()
-
-			context.reference_doctype = context.doc.doctype
-			context.reference_name = context.doc.name
-
-			if self.show_attachments:
-			    context.attachments = frappe.get_all('File', filters= {"attached_to_name": context.reference_name, "attached_to_doctype": context.reference_doctype, "is_private": 0},
-					fields=['file_name','file_url', 'file_size'])
-
-			if self.allow_comments:
-				context.comment_list = get_comment_list(context.doc.doctype,
-					context.doc.name)
-
-	def add_custom_context_and_script(self, context):
-		'''Update context from module if standard and append script'''
-		if self.desk_form_module:
-			new_context = self.desk_form_module.get_context(context)
-
-			if new_context:
-				context.update(new_context)
-
-			js_path = os.path.join(os.path.dirname(self.desk_form_module.__file__), scrub(self.name) + '.js')
-			if os.path.exists(js_path):
-				script = frappe.render_template(open(js_path, 'r').read(), context)
-
-				for path in get_code_files_via_hooks("webform_include_js", context.doc_type):
-					custom_js = frappe.render_template(open(path, 'r').read(), context)
-					script = "\n\n".join([script, custom_js])
-
-				context.script = script
-
-			css_path = os.path.join(os.path.dirname(self.desk_form_module.__file__), scrub(self.name) + '.css')
-			if os.path.exists(css_path):
-				style = open(css_path, 'r').read()
-
-				for path in get_code_files_via_hooks("webform_include_css", context.doc_type):
-					custom_css = open(path, 'r').read()
-					style = "\n\n".join([style, custom_css])
-
-				context.style = style
 
 	def get_parents(self, context):
 		parents = None
@@ -370,39 +250,6 @@ def accept(desk_form, data, doc_name=None):
 
 	return doc
 
-@frappe.whitelist()
-def delete(desk_form_name, docname):
-	desk_form = frappe.get_doc("Desk Form", desk_form_name)
-
-	owner = frappe.db.get_value(desk_form.doc_type, docname, "owner")
-	if frappe.session.user == owner and desk_form.allow_delete:
-		frappe.delete_doc(desk_form.doc_type, docname, ignore_permissions=True)
-	else:
-		raise frappe.PermissionError("Not Allowed")
-
-
-@frappe.whitelist()
-def delete_multiple(desk_form_name, docnames):
-	desk_form = frappe.get_doc("Desk Form", desk_form_name)
-
-	docnames = json.loads(docnames)
-
-	allowed_docnames = []
-	restricted_docnames = []
-
-	for docname in docnames:
-		owner = frappe.db.get_value(desk_form.doc_type, docname, "owner")
-		if frappe.session.user == owner and desk_form.allow_delete:
-			allowed_docnames.append(docname)
-		else:
-			restricted_docnames.append(docname)
-
-	for docname in allowed_docnames:
-		frappe.delete_doc(desk_form.doc_type, docname, ignore_permissions=True)
-
-	if restricted_docnames:
-		raise frappe.PermissionError("You do not have permisssion to delete " + ", ".join(restricted_docnames))
-
 
 def has_desk_form_permission(doctype, name, ptype='read'):
 	if frappe.session.user=="Guest":
@@ -446,16 +293,6 @@ def get_fetch_values(doctype, txt, searchfield, start, page_len, filters):
 
 	return frappe.get_all(doctype, fields=["name", searchfield], filters=filters,
 		order_by=searchfield, limit_start=start, limit_page_length=page_len)
-
-def make_route_string(parameters):
-	route_string = ""
-	delimeter = '?'
-	if isinstance(parameters, dict):
-		for key in parameters:
-			if key != "desk_form_name":
-				route_string += route_string + delimeter + key + "=" + cstr(parameters[key])
-				delimeter = '&'
-	return (route_string, delimeter)
 
 
 @frappe.whitelist(allow_guest=False)
